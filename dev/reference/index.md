@@ -5,6 +5,8 @@
 - [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_missing_glucose_imputation.md)
   : Impute real missing glucose values using the CGMissingData Python
   workflow
+- [`run_app()`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_app.md)
+  : Launch the CGMissingDataR Shiny App
 
 ## Deprecated Legacy Workflow
 
@@ -16,5 +18,7 @@
 
 ## Datasets
 
-- [`CGMExampleData`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/CGMExampleData.md)
+- [`CGMExmplDat5Pct`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/CGMExmplDat5Pct.md)
+  : Example dataset for CGMissingData
+- [`CGMExmplDat10Pct`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/CGMExmplDat10Pct.md)
   : Example dataset for CGMissingData

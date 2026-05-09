@@ -53,33 +53,34 @@ library(CGMissingDataR)
 
 ## Example data
 
-`CGMExampleData` is a small multi-subject CGM data set included with the
-package. It contains a subject identifier, raw timestamp column, glucose
-column, age, and HbA1c.
+`CGMExmplDat10Pct` is a small multi-subject CGM data set included with
+the package. It contains a subject identifier, raw timestamp column,
+glucose column, age, and HbA1c.
 
 ``` r
 
-data("CGMExampleData")
+data("CGMExmplDat10Pct")
 
 summary_table <- data.frame(
-  Rows = nrow(CGMExampleData),
-  Columns = ncol(CGMExampleData),
-  Subjects = length(unique(CGMExampleData$USUBJID)),
-  MissingGlucose = sum(is.na(CGMExampleData$LBORRES)),
-  MissingPercent = round(mean(is.na(CGMExampleData$LBORRES)) * 100, 1)
+  Rows = nrow(CGMExmplDat10Pct),
+  Columns = ncol(CGMExmplDat10Pct),
+  Subjects = length(unique(CGMExmplDat10Pct$USUBJID)),
+  MissingGlucose = sum(is.na(CGMExmplDat10Pct$LBORRES)),
+  MissingPercent = round(mean(is.na(CGMExmplDat10Pct$LBORRES)) * 100, 1)
 )
 
 summary_table
 #>   Rows Columns Subjects MissingGlucose MissingPercent
 #> 1  500       5        5             50             10
-head(CGMExampleData)
-#>   USUBJID LBORRES             Time AGE hba1c
-#> 1      11     150 2020:01:16:00:00  34   6.4
-#> 2      11     134 2020:01:16:00:05  34   6.4
-#> 3      11     125 2020:01:16:00:10  34   6.4
-#> 4      11     132 2020:01:16:00:15  34   6.4
-#> 5      11     132 2020:01:16:00:20  34   6.4
-#> 6      11     132 2020:01:16:00:25  34   6.4
+head(CGMExmplDat10Pct)
+#>    USUBJID LBORRES             Time   AGE hba1c
+#>      <int>   <num>           <char> <int> <num>
+#> 1:      11     150 2020:01:16:00:00    34   6.4
+#> 2:      11     134 2020:01:16:00:05    34   6.4
+#> 3:      11     125 2020:01:16:00:10    34   6.4
+#> 4:      11     132 2020:01:16:00:15    34   6.4
+#> 5:      11     132 2020:01:16:00:20    34   6.4
+#> 6:      11     132 2020:01:16:00:25    34   6.4
 ```
 
 The example data intentionally does not include `TimeSeries`. The
@@ -109,7 +110,7 @@ For the CRAN-safe R-native path, use `imputer_backend = "mice"`.
 
 impute_out <- suppressWarnings(
   run_missing_glucose_imputation(
-    CGMExampleData,
+    CGMExmplDat10Pct,
     target_col = "LBORRES",
     feature_cols = c("AGE", "hba1c"),
     id_col = "USUBJID",
@@ -176,7 +177,7 @@ The original target column is not overwritten:
 
 ``` r
 
-sum(is.na(CGMExampleData$LBORRES))
+sum(is.na(CGMExmplDat10Pct$LBORRES))
 #> [1] 50
 sum(is.na(impute_out$LBORRES))
 #> [1] 50
@@ -321,7 +322,7 @@ Then call the function with `imputer_backend = "sklearn"`:
 ``` r
 
 out_py <- run_missing_glucose_imputation(
-  CGMExampleData,
+  CGMExmplDat10Pct,
   target_col = "LBORRES",
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",
@@ -361,7 +362,7 @@ timestamped CSV file in the current working directory.
 ``` r
 
 out <- run_missing_glucose_imputation(
-  CGMExampleData,
+  CGMExmplDat10Pct,
   target_col = "LBORRES",
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",
@@ -453,13 +454,13 @@ utils::sessionInfo()
 #> [25] purrr_1.2.2       codetools_0.2-20  textshaping_1.0.5 jquerylib_0.1.4  
 #> [29] reformulas_0.4.4  Rdpack_2.6.6      cli_3.6.6         rlang_1.2.0      
 #> [33] rbibutils_2.4.1   splines_4.6.0     cachem_1.1.0      yaml_2.3.12      
-#> [37] pan_1.9           FNN_1.1.4.1       tools_4.6.0       nloptr_2.2.1     
-#> [41] minqa_1.2.8       dplyr_1.2.1       ranger_0.18.0     boot_1.3-32      
-#> [45] broom_1.0.12      rpart_4.1.27      vctrs_0.7.3       R6_2.6.1         
-#> [49] lifecycle_1.0.5   fs_2.1.0          MASS_7.3-65       ragg_1.5.2       
-#> [53] pkgconfig_2.0.3   desc_1.4.3        pkgdown_2.2.0     pillar_1.11.1    
-#> [57] bslib_0.10.0      data.table_1.18.4 glue_1.8.1        Rcpp_1.1.1-1.1   
-#> [61] systemfonts_1.3.2 xfun_0.57         tibble_3.3.1      tidyselect_1.2.1 
-#> [65] knitr_1.51        nlme_3.1-169      htmltools_0.5.9   rmarkdown_2.31   
-#> [69] compiler_4.6.0
+#> [37] pan_1.9           otel_0.2.0        FNN_1.1.4.1       tools_4.6.0      
+#> [41] nloptr_2.2.1      minqa_1.2.8       dplyr_1.2.1       ranger_0.18.0    
+#> [45] boot_1.3-32       broom_1.0.12      rpart_4.1.27      vctrs_0.7.3      
+#> [49] R6_2.6.1          lifecycle_1.0.5   fs_2.1.0          MASS_7.3-65      
+#> [53] ragg_1.5.2        pkgconfig_2.0.3   desc_1.4.3        pkgdown_2.2.0    
+#> [57] pillar_1.11.1     bslib_0.10.0      data.table_1.18.4 glue_1.8.1       
+#> [61] Rcpp_1.1.1-1.1    systemfonts_1.3.2 xfun_0.57         tibble_3.3.1     
+#> [65] tidyselect_1.2.1  knitr_1.51        nlme_3.1-169      htmltools_0.5.9  
+#> [69] rmarkdown_2.31    compiler_4.6.0
 ```

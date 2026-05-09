@@ -184,9 +184,9 @@ is retained.
 ## Examples
 
 ``` r
-data("CGMExampleData")
+data("CGMExmplDat10Pct")
 out <- run_missing_glucose_imputation(
-  CGMExampleData,
+  CGMExmplDat10Pct,
   target_col = "LBORRES",
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",

@@ -4,6 +4,12 @@
 
 ### Major changes
 
+- - Added a package-bundled Shiny app for interactive missing glucose
+    imputation. The app lets users upload a CSV file, select the target
+    glucose, subject ID, timestamp, and feature columns, run
+    [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_missing_glucose_imputation.md),
+    preview imputed rows, and download the completed data as a CSV file.
+
 - Refocused the package documentation around real missing glucose
   imputation with
   [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/dev/reference/run_missing_glucose_imputation.md).
@@ -54,8 +60,10 @@
 
 ### Documentation
 
+- Added documentation for launching and using the Shiny app.
+
 - Updated examples to focus on real missing glucose imputation with
-  `CGMExampleData`.
+  `CGMExmplDat10Pct`.
 
 - Documented the difference between the default R-native MICE backend
   and the optional Python-compatible sklearn backend.
