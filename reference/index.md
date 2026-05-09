@@ -1,11 +1,22 @@
 # Package index
 
-## Running Benchmark
+## Current Imputation Workflows
 
-- [`run_missingness_benchmark()`](https://saraswatsh.github.io/CGMissingDataR/reference/run_missingness_benchmark.md)
-  : Run missingness benchmark
+- [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_missing_glucose_imputation.md)
+  : Impute real missing glucose values using the CGMissingData Python
+  workflow
+- [`run_app()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_app.md)
+  : Launch the CGMissingDataR Shiny App
+
+## Deprecated Legacy Workflow
+
+- [`run_missingness_benchmark()`](https://zhanglabuky.github.io/CGMissingDataR/reference/run_missingness_benchmark.md)
+  **\[deprecated\]** : Run missingness benchmark (target-masking with
+  LAG features)
 
 ## Datasets
 
-- [`CGMExampleData`](https://saraswatsh.github.io/CGMissingDataR/reference/CGMExampleData.md)
+- [`CGMExmplDat5Pct`](https://zhanglabuky.github.io/CGMissingDataR/reference/CGMExmplDat5Pct.md)
+  : Example dataset for CGMissingData
+- [`CGMExmplDat10Pct`](https://zhanglabuky.github.io/CGMissingDataR/reference/CGMExmplDat10Pct.md)
   : Example dataset for CGMissingData

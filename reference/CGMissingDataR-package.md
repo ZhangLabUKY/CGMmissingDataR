@@ -1,28 +1,34 @@
-# CGMissingDataR: Missingness Benchmark (MICE Imputation, Random Forest, kNN)
+# CGMissingDataR: Impute Missing Glucose Values in CGM Data
 
-Evaluates predictive performance under feature-level missingness in
-repeated-measures continuous glucose monitoring-like data. The benchmark
-injects missing values at user-specified rates, imputes incomplete
-feature matrices using an iterative chained-equations approach inspired
-by multivariate imputation by chained equations (MICE) (Melissa J. Azur,
-Elizabeth A. Stuart, Constantine Frangakis and Philip J. Leaf (2011)
-[doi:10.1002/mpr.329](https://doi.org/10.1002/mpr.329) ), fits Random
-Forest regression models (Leo Breiman (2001)
+Imputes missing glucose values in repeated-measures continuous glucose
+monitoring (CGM) data. Workflows create time-series features from raw
+timestamps, support model selection, and return model-specific completed
+data sets for glucose values that are already missing in user data.
+Methods include multiple imputation by chained equations (MICE; Azur et
+al. (2011) [doi:10.1002/mpr.329](https://doi.org/10.1002/mpr.329) ),
+Random Forest regression (Breiman (2001)
 [doi:10.1023/A:1010933404324](https://doi.org/10.1023/A%3A1010933404324)
-) and k-nearest-neighbor regression models (Zhongheng Zhang (2016)
+), k-nearest-neighbor regression (Zhang (2016)
 [doi:10.21037/atm.2016.03.37](https://doi.org/10.21037/atm.2016.03.37)
-), and reports mean absolute percentage error (MAPE) and R-squared (R2)
-across missingness rates.
+), XGBoost (Chen and Guestrin (2016)
+[doi:10.1145/2939672.2939785](https://doi.org/10.1145/2939672.2939785)
+), LightGBM (Ke et al. (2017)
+<https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision>),
+and ARIMA forecasting with the forecast framework (Hyndman and Khandakar
+(2008)
+[doi:10.18637/jss.v027.i03](https://doi.org/10.18637/jss.v027.i03) ). An
+optional Python-compatible backend uses 'reticulate' to call 'pandas',
+'scikit-learn', 'statsmodels', and Python 'xgboost' directly.
 
 ## See also
 
 Useful links:
 
-- <https://github.com/saraswatsh/CGMissingDataR>
+- <https://zhanglabuky.github.io/CGMissingDataR/>
 
-- <https://saraswatsh.github.io/CGMissingDataR/>
+- <https://github.com/ZhangLabUKY/CGMissingDataR>
 
-- Report bugs at <https://github.com/saraswatsh/CGMissingDataR/issues>
+- Report bugs at <https://github.com/ZhangLabUKY/CGMissingDataR/issues>
 
 ## Author
 
