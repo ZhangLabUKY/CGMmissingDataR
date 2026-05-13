@@ -18,26 +18,42 @@ knitr::opts_chunk$set(
 
 # Overview
 
-CGMissingDataR imputes glucose values that are already missing in continuous
- glucose monitoring (CGM) data. The main user-facing function is:
+CGMissingDataR imputes missing glucose values in continuous glucose monitoring
+(CGM) data. The main user-facing function is:
 
 ```r
 run_missing_glucose_imputation()
 ```
 
-The function is designed for real missing glucose values. It returns a single
- data frame with the original glucose column left unchanged and a new completed
- glucose column named `imputed_glucose_value`.
+The function is designed for real missing glucose values. It handles two common
+forms of CGM missingness:
+
+1. explicit missing glucose values, where a row exists but the glucose value is
+   `NA`; and
+2. implicit missing readings, where expected timestamps are absent from the data.
+
+Before imputation, the function regularizes each subject to an equal
+`interval_minutes` timestamp grid. Missing timestamp gaps are converted into
+explicit rows with `target_col = NA`, then imputed by the same workflow used for
+explicit missing glucose values.
+
+The returned data frame is intentionally minimal. It contains the original
+user-supplied columns plus a completed glucose column named
+`imputed_glucose_value`. Internal columns used for timestamp regularization,
+time features, lag features, rolling means, model fitting, and missingness
+tracking are not returned.
 
 The core workflow is:
 
 1. read a data frame or CSV file;
-2. create or reuse a `TimeSeries` column;
-3. encode `SEX` when present;
-4. create internal lag and rolling-mean glucose features;
-5. impute the target and feature matrix;
-6. choose `MICE+ARIMA` or `MICE+XGBoost` from the observed missing rate;
-7. remove internal-only engineered features before returning the data frame.
+2. parse and sort timestamps by subject;
+3. regularize each subject to an equal `interval_minutes` timestamp grid;
+4. insert missing timestamp rows with `target_col = NA`;
+5. create internal time, lag, and rolling-mean features;
+6. impute the target and feature matrix;
+7. choose `MICE+ARIMA` or `MICE+XGBoost` from the post-regularization missing
+   rate;
+8. return the original columns plus `imputed_glucose_value`.
 
 # Installation
 
@@ -63,8 +79,8 @@ library(CGMissingDataR)
 # Example data
 
 `CGMExmplDat10Pct` is a small multi-subject CGM data set included with the
- package. It contains a subject identifier, raw timestamp column, glucose column,
- age, and HbA1c.
+package. It contains a subject identifier, raw timestamp column, glucose column,
+age, and HbA1c.
 
 ```{r example-data}
 data("CGMExmplDat10Pct")
@@ -82,7 +98,7 @@ head(CGMExmplDat10Pct)
 ```
 
 The example data intentionally does not include `TimeSeries`. The imputation
- function creates that column internally from the raw `Time` column.
+function creates required time features internally from the raw `Time` column.
 
 # Required input columns
 
@@ -96,8 +112,50 @@ At minimum, the imputation function needs:
 | Additional predictors | `feature_cols` | `AGE`, `hba1c` |
 
 The target column may contain missing values. Predictor columns should be numeric
- or coercible to numeric. The `SEX` column, when present, is internally encoded
- as `M = 1` and `F = 0`.
+or coercible to numeric. The `SEX` column, when present, is internally encoded
+as `M = 1` and `F = 0`.
+
+# What counts as missing?
+
+CGM exports can represent missingness in two ways.
+
+## Explicit missing glucose values
+
+A row exists, but the glucose value is missing:
+
+| Time | LBORRES |
+|---|---:|
+| 00:00 | 120 |
+| 00:05 | NA |
+| 00:10 | 125 |
+
+The row with `LBORRES = NA` is imputed.
+
+## Timestamp gaps
+
+A row is absent entirely, producing a jump in the timestamp sequence:
+
+| Time | LBORRES |
+|---|---:|
+| 00:00 | 120 |
+| 00:05 | 122 |
+| 00:30 | 130 |
+
+With `interval_minutes = 5`, the function internally regularizes this to:
+
+| Time | LBORRES |
+|---|---:|
+| 00:00 | 120 |
+| 00:05 | 122 |
+| 00:10 | NA |
+| 00:15 | NA |
+| 00:20 | NA |
+| 00:25 | NA |
+| 00:30 | 130 |
+
+The inserted rows are then imputed using the same workflow as explicit `NA`
+values. Because of this, the returned data frame may have more rows than the
+input data when timestamp gaps are present.
 
 # Basic real-imputation workflow
 
@@ -112,7 +170,6 @@ impute_out <- suppressWarnings(
     id_col = "USUBJID",
     time_col = "Time",
     imputer_backend = "mice",
-    prefer_cgmanalyzer_equal_interval = FALSE,
     xgb_nrounds = 5
   )
 )
@@ -126,25 +183,23 @@ nrow(impute_out)
 names(impute_out)
 ```
 
-The most important returned columns are:
+The returned columns are the original user-supplied columns plus
+`imputed_glucose_value`.
 
 | Column | Meaning |
 |---|---|
-| Original target column, e.g. `LBORRES` | The original glucose column. Values originally missing remain `NA`. |
-| `TimeSeries` | Numeric elapsed time feature derived from the timestamp column. |
+| Original columns | The user's input columns, including the original glucose column. |
+| Original target column, e.g. `LBORRES` | The original glucose column. Values originally missing or inserted from timestamp gaps remain `NA`. |
 | `imputed_glucose_value` | Completed glucose values after imputation. |
-| `imputation_method` | Final method used: `MICE+ARIMA` or `MICE+XGBoost`. |
-| `missing_rate` | Original missing rate of the target column. |
 
 ```{r output-preview}
 head(impute_out[c(
   "USUBJID",
   "Time",
-  "TimeSeries",
   "LBORRES",
-  "imputed_glucose_value",
-  "imputation_method",
-  "missing_rate"
+  "AGE",
+  "hba1c",
+  "imputed_glucose_value"
 )])
 ```
 
@@ -156,7 +211,9 @@ sum(is.na(impute_out$LBORRES))
 sum(is.na(impute_out$imputed_glucose_value))
 ```
 
-Inspect only the rows where glucose was originally missing:
+Inspect rows where the original target column is missing. These include explicit
+missing glucose values and, when timestamp gaps are present, rows inserted during
+timestamp regularization.
 
 ```{r missing-row-preview}
 missing_rows <- is.na(impute_out$LBORRES)
@@ -164,35 +221,29 @@ head(impute_out[missing_rows, c(
   "USUBJID",
   "Time",
   "LBORRES",
-  "imputed_glucose_value",
-  "imputation_method"
+  "imputed_glucose_value"
 )])
 ```
 
 # How the method is selected
 
 The function automatically chooses the final imputation model from the target
- missing rate:
+missing rate after timestamp-gap regularization:
 
-- if missing rate is less than or equal to `use_arima_if_missing_leq`, the final
-  method is `MICE+ARIMA`;
+- if the missing rate is less than or equal to `use_arima_if_missing_leq`, the
+  final method is `MICE+ARIMA`;
 - otherwise, the final method is `MICE+XGBoost`.
 
 The default threshold is `0.05`.
 
-```{r method-selection}
-unique(impute_out$missing_rate)
-unique(impute_out$imputation_method)
-```
+Method labels and missingness-tracking columns are internal implementation
+details in the minimal user-facing output. The returned data frame keeps only
+the original input columns plus `imputed_glucose_value`.
 
-For data sets with more than 5% target missingness, the default final method is
- usually `MICE+XGBoost`. For lower missingness, the function uses segmentwise
- ARIMA when enough subject-level history is available.
-
-# Time handling
+# Time handling and timestamp regularization
 
 The function accepts common timestamp formats, including colon-separated,
- hyphen-separated, slash-separated, ISO-style, and `POSIXct` inputs.
+hyphen-separated, slash-separated, ISO-style, and `POSIXct` inputs.
 
 Examples of accepted character formats include:
 
@@ -204,31 +255,56 @@ Examples of accepted character formats include:
 "2020-01-16T00:00:00"
 ```
 
-If a non-empty `TimeSeries` column is already present, the function reuses it.
- Otherwise, it creates `TimeSeries` from the timestamp column.
-
-For quieter reproducible examples, this vignette uses:
+The function uses the timestamp column and `interval_minutes` to regularize each
+subject's data to an expected CGM interval. The default is:
 
 ```r
-prefer_cgmanalyzer_equal_interval = FALSE
+interval_minutes = 5
 ```
 
-That bypasses `CGManalyzer::equalInterval.fn()` and uses elapsed minutes by
- subject. Users who want the CGManalyzer equal-interval behavior can leave the
- default value as `TRUE`.
+Observed timestamps are aligned to the subject-level interval grid, missing grid
+positions are inserted, and the inserted target values are set to `NA` before
+imputation.
 
 # Internal engineered features
 
-The workflow creates lag and rolling-mean features before imputation. These
- features are used internally by the imputer and final model, but they are not
- included in the returned data frame.
+The workflow creates `TimeSeries`, `TimeDifferenceMinutes`, lag features, and a
+rolling mean before imputation. These features help the model use temporal order,
+time spacing, and recent glucose history.
+
+For example, after timestamp regularization, lag features are created on the
+expanded grid:
+
+| Time | LBORRES | lag1 | lag2 | lag3 |
+|---|---:|---:|---:|---:|
+| 00:00 | 120 | NA | NA | NA |
+| 00:05 | 122 | 120 | NA | NA |
+| 00:10 | NA | 122 | 120 | NA |
+| 00:15 | NA | NA | 122 | 120 |
+| 00:20 | NA | NA | NA | 122 |
+
+These engineered columns are used internally by the imputer and final model but
+are removed from the returned data frame.
 
 ```{r internal-feature-check}
-grep("^lag[0-9]+$|^rollmean$", names(impute_out), value = TRUE)
+grep("^lag[0-9]+$|^rollmean$|^TimeSeries$|^TimeDifferenceMinutes$", names(impute_out), value = TRUE)
 ```
 
 This should return an empty character vector because those features are internal
- implementation details.
+implementation details.
+
+# Continuous imputed values
+
+`imputed_glucose_value` is returned as a continuous numeric model estimate. It is
+not rounded to the nearest whole number by default because downstream analyses
+may benefit from retaining the model-estimated precision.
+
+Users who need whole-number glucose values for reporting can round after
+imputation:
+
+```{r rounding-example, eval = FALSE}
+impute_out$imputed_glucose_value_rounded <- round(impute_out$imputed_glucose_value)
+```
 
 # Optional Python-compatible backend
 
@@ -239,7 +315,7 @@ imputer_backend = "sklearn"
 ```
 
 In that mode, the function sends the input data frame to Python through
- `reticulate`. Python then performs preprocessing and imputation with:
+`reticulate`. Python then performs preprocessing and imputation with:
 
 - `pandas` for data-frame operations;
 - `scikit-learn` for `IterativeImputer`;
@@ -285,13 +361,12 @@ head(out_py[c(
   "USUBJID",
   "Time",
   "LBORRES",
-  "imputed_glucose_value",
-  "imputation_method"
+  "imputed_glucose_value"
 )])
 ```
 
 The Python backend is optional. It is not required for package installation or
- for building this vignette.
+for building this vignette.
 
 # Choosing a backend
 
@@ -301,13 +376,13 @@ The Python backend is optional. It is not required for package installation or
 | `sklearn` | Closest Python-compatible workflow | Requires `reticulate` and Python packages. |
 
 Use `mice` for simple installation and CRAN-safe examples. Use `sklearn` when
- comparing with the Python reference workflow or when you want Python libraries
- to perform the full strict path.
+comparing with the Python reference workflow or when you want Python libraries
+to perform the full strict path.
 
 # Exporting results
 
 Set `export = TRUE` to write the returned imputed data frame to a timestamped
- CSV file in the current working directory.
+CSV file in the current working directory.
 
 ```{r export-example, eval = FALSE}
 out <- run_missing_glucose_imputation(
@@ -321,7 +396,8 @@ out <- run_missing_glucose_imputation(
 )
 ```
 
-The function still returns the data frame invisibly to the assignment target.
+The exported CSV contains the original input columns plus
+`imputed_glucose_value`.
 
 # Troubleshooting
 
@@ -340,26 +416,36 @@ head(unique(your_data$Time))
 ```
 
 Use a standard format such as `YYYY-mm-dd HH:MM:SS`, `YYYY:mm:dd:HH:MM`, or a
- `POSIXct` column.
+`POSIXct` column.
+
+## Unexpected row counts
+
+If the returned data frame has more rows than the input data, this is expected
+when timestamp gaps are present. The function creates rows for missing expected
+CGM readings before imputation.
+
+If the increase is larger than expected, inspect whether the timestamp column
+contains off-grid times such as seconds, irregular minutes, or mixed timestamp
+formats.
 
 ## Python module errors
 
 If the Python backend reports a missing module such as `sklearn`, remember that
- the package is installed as `scikit-learn` but imported as `sklearn`.
+the package is installed as `scikit-learn` but imported as `sklearn`.
 
 ```r
 reticulate::py_require(c("scikit-learn", "pandas", "statsmodels", "xgboost"))
 ```
 
 If Python was already initialized before declaring requirements, restart R and
- run the call again.
+run the call again.
 
 ## Warnings from `mice`
 
 Small or highly collinear data sets can cause `mice` to report logged events.
- This is common with tiny examples and does not necessarily indicate failure.
- With real data, inspect those warnings to decide whether columns should be
- removed, recoded, or simplified.
+This is common with tiny examples and does not necessarily indicate failure.
+With real data, inspect those warnings to decide whether columns should be
+removed, recoded, or simplified.
 
 # Session information
 

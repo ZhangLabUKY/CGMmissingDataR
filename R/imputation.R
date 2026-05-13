@@ -553,20 +553,15 @@ run_comprehensive_imputation_benchmark <- function(
 }
 
 
-#' Impute real missing glucose values using the CGMissingData Python workflow
+#' Impute missing glucose values using Mice and ARIMA/XGBoost
 #'
 #' @description
-#' Strict R entry point for the real-missing-value imputation workflow in the
-#' Python package `CGMissingData` 0.1.6. When `imputer_backend = "sklearn"`, the
-#' full strict path is executed in Python through `reticulate`: pandas performs
-#' preprocessing and feature construction, scikit-learn runs
-#' `IterativeImputer`, statsmodels runs segmentwise ARIMA when the missing rate
-#' is low, and Python xgboost runs the high-missingness branch. The completed
-#' pandas data frame is then converted back to R.
-#'
-#' The R fallback `imputer_backend = "mice"` keeps the same R-side pipeline and
-#' uses the R package `mice` for the imputation matrix. No iterative-ridge
-#' backend is used.
+#' Imputes missing glucose values in continuous glucose monitoring (CGM) data.
+#' The function handles both explicit missing glucose values already coded as
+#' `NA` and implicit missing readings caused by timestamp gaps. Before
+#' imputation, each subject is regularized to an equal `interval_minutes`
+#' timestamp grid; missing timestamp gaps are converted into explicit rows with
+#' `target_col = NA`, then imputed using the selected backend.
 #'
 #' @param data A data.frame, an object coercible to data.frame, or a path to a
 #'   CSV file.
@@ -601,9 +596,9 @@ run_comprehensive_imputation_benchmark <- function(
 #' @param add_rollmean Logical: add rolling mean of prior target values. Python
 #'   always adds this; setting `FALSE` is allowed only for compatibility.
 #' @param roll_window Integer rolling mean window. Python default is 3.
-#' @param interval_minutes Equal interval in minutes. In the Python-engine path,
-#'   elapsed minutes are computed by subject when `TimeSeries` is not already
-#'   present.
+#' @param interval_minutes Expected spacing, in minutes, between consecutive CGM
+#'   readings. The default is `5`. The function uses this value to regularize
+#'   each subject's timestamps to an equal-interval grid before imputation.
 #' @param use_arima_if_missing_leq Numeric missing-rate threshold. If the target
 #'   missing rate is less than or equal to this value, segmentwise ARIMA is used;
 #'   otherwise XGBoost is used. Python default is 0.05.
@@ -619,25 +614,26 @@ run_comprehensive_imputation_benchmark <- function(
 #' @param export Logical; if `TRUE`, writes the returned imputed data frame to a
 #'   timestamped CSV file in the current working directory. Default is `FALSE`.
 #'
-#' @return A data.frame sorted by `id_col` and `TimeSeries`, matching the Python
-#'   package output shape. The original target column is left unchanged, so rows
-#'   that were originally missing remain `NA` in `target_col`.
-#'   `imputed_glucose_value` contains the completed target values,
-#'   `imputation_method` is either `"MICE+ARIMA"` or `"MICE+XGBoost"`, and
-#'   `missing_rate` is the original target missing rate. Generated lag and
-#'   rolling-mean feature columns are used internally and removed before return.
+#' @return A data.frame containing the original user-supplied columns plus
+#'   `imputed_glucose_value`, the completed glucose column. The original target
+#'   column is left unchanged, so values that were originally missing or created
+#'   from timestamp gaps remain `NA` in `target_col`, while their completed
+#'   values are stored in `imputed_glucose_value`.
 #'
 #' @details
-#' For closest Python-package parity, use `imputer_backend = "sklearn"` with a
-#' Python environment containing `numpy`, `pandas`, `scikit-learn`,
-#' `statsmodels`, and `xgboost`. The sklearn path intentionally calls those
-#' modules directly rather than wrapping the Python package.
+#' The imputation workflow first parses and sorts timestamps within each subject.
+#' Each subject is regularized to an equal `interval_minutes` grid. If a reading
+#' is missing because the timestamp is absent from the input data, a new row is
+#' inserted and the target glucose value is set to `NA`. These inserted missing
+#' values are then imputed using the same workflow as explicit `NA` values.
 #'
-#' The ARIMA branch is segmentwise, matching the Python package: within each
-#' subject, contiguous missing blocks are detected, ARIMA is fit only to the
-#' MICE-completed history before the block, and forecasts replace the MICE
-#' values only when there are at least `arima_min_history` finite historical
-#' values and the ARIMA fit succeeds. Otherwise, the MICE value is retained.
+#' Internally, the function creates time features, lag features, and rolling-mean
+#' features to support imputation. These engineered columns are used only during
+#' model fitting and are removed from the returned data frame.
+#'
+#' `imputed_glucose_value` is returned as a continuous numeric model estimate.
+#' Users who require whole-number glucose values for reporting can round this
+#' column after imputation.
 #'
 #' @examples
 #' data("CGMExmplDat10Pct")
@@ -649,9 +645,10 @@ run_comprehensive_imputation_benchmark <- function(
 #'   time_col = "Time",
 #'   imputer_backend = "mice"
 #' )
-#' head(out[, c("LBORRES", "imputed_glucose_value", "imputation_method")])
+#' head(subset(out, is.na(LBORRES)))
 #'
 #' @importFrom utils read.csv write.csv
+#' @importFrom CGManalyzer equalInterval.fn
 #' @export
 run_missing_glucose_imputation <- function(
   data,
@@ -678,20 +675,6 @@ run_missing_glucose_imputation <- function(
   prefer_cgmanalyzer_equal_interval = FALSE,
   export = FALSE
 ) {
-  # Send a message if the target column has more than 20% missing values
-  # in the full data set.
-  target_missing_rate <- mean(is.na(data[[target_col]]))
-  if (target_missing_rate > 0.20) {
-    message(
-      "Warning: target_col '",
-      target_col,
-      "' has",
-      target_missing_rate * 100,
-      "% missing values. 
-      Imputed values may be less reliable when the missing rate is high."
-    )
-  }
-
   imputer_backend <- match.arg(imputer_backend)
 
   if (!is.character(target_col) || length(target_col) != 1L) {
@@ -747,12 +730,35 @@ run_missing_glucose_imputation <- function(
   }
 
   out <- .cgmd_py_read_data(data)
+  original_output_cols <- names(out)
 
   if (!target_col %in% names(out)) {
     stop("Missing required target_col: ", target_col)
   }
   if (!id_col %in% names(out)) {
     stop("Missing required id_col: ", id_col)
+  }
+  if (!time_col %in% names(out)) {
+    stop("Missing required time_col: ", time_col)
+  }
+
+  out <- .cgmd_py_regularize_timestamp_gaps(
+    df = out,
+    id_col = id_col,
+    time_col = time_col,
+    target_col = target_col,
+    interval_minutes = interval_minutes
+  )
+
+  target_missing_rate <- mean(is.na(out[[target_col]]))
+  if (target_missing_rate > 0.20) {
+    message(
+      sprintf(
+        "Warning: target_col '%s' has %.1f%% missing values after timestamp-gap regularization. Imputed values may be less reliable when the missing rate is high.",
+        target_col,
+        target_missing_rate * 100
+      )
+    )
   }
 
   if (identical(imputer_backend, "sklearn")) {
@@ -773,6 +779,11 @@ run_missing_glucose_imputation <- function(
       xgb_nrounds = xgb_nrounds,
       drop_internal_cols = TRUE
     )
+    result <- .cgmd_py_keep_user_output_cols(
+      df = result,
+      original_cols = original_output_cols
+    )
+
     result <- .cgmd_py_export_if_requested(result, export)
     return(result)
   }
@@ -850,6 +861,11 @@ run_missing_glucose_imputation <- function(
     arima_min_history = arima_min_history,
     xgb_nrounds = xgb_nrounds
   )
+  result <- .cgmd_py_keep_user_output_cols(
+    df = result,
+    original_cols = original_output_cols
+  )
+
   result <- .cgmd_py_export_if_requested(result, export)
   result
 }
@@ -877,18 +893,16 @@ run_missing_glucose_imputation <- function(
     )
   }
 
-  if (
-    "py_require" %in%
-      getNamespaceExports("reticulate") &&
-      !reticulate::py_available(initialize = FALSE)
-  ) {
-    reticulate::py_require(c(
-      "numpy",
-      "pandas",
-      "scikit-learn",
-      "statsmodels",
-      "xgboost"
-    ))
+  required_py_packages <- c(
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "statsmodels",
+    "xgboost"
+  )
+
+  if ("py_require" %in% getNamespaceExports("reticulate")) {
+    reticulate::py_require(required_py_packages)
   }
 
   if (!reticulate::py_available(initialize = TRUE)) {
@@ -905,6 +919,7 @@ run_missing_glucose_imputation <- function(
       missing_modules <- c(missing_modules, mod)
     }
   }
+
   if (length(missing_modules) > 0L) {
     stop(
       "The sklearn Python engine requires Python modules: numpy, pandas, scikit-learn, statsmodels, xgboost. ",
@@ -1157,6 +1172,208 @@ run_missing_glucose_imputation <- function(
   }
 }
 
+
+.cgmd_py_regularize_timestamp_gaps <- function(
+  df,
+  id_col,
+  time_col,
+  target_col,
+  interval_minutes = 5L
+) {
+  out <- as.data.frame(df, stringsAsFactors = FALSE)
+
+  if (!id_col %in% names(out)) {
+    stop("Missing required id_col: ", id_col, call. = FALSE)
+  }
+  if (!time_col %in% names(out)) {
+    stop("Missing required time_col: ", time_col, call. = FALSE)
+  }
+  if (!target_col %in% names(out)) {
+    stop("Missing required target_col: ", target_col, call. = FALSE)
+  }
+
+  parsed <- .cgmd_py_parse_timestamp(out[[time_col]])
+  if (any(is.na(parsed))) {
+    stop("Some timestamp values could not be parsed.", call. = FALSE)
+  }
+
+  out[[time_col]] <- parsed
+  out[["inserted_timestamp_gap"]] <- FALSE
+  out[["explicit_missing_glucose"]] <- is.na(out[[target_col]])
+
+  id_values <- unique(out[[id_col]])
+  id_values <- id_values[!is.na(id_values)]
+  regularized <- vector("list", length(id_values))
+
+  for (i in seq_along(id_values)) {
+    id_value <- id_values[[i]]
+    g <- out[!is.na(out[[id_col]]) & out[[id_col]] == id_value, , drop = FALSE]
+    g <- g[order(g[[time_col]]), , drop = FALSE]
+
+    start_time <- min(g[[time_col]], na.rm = TRUE)
+    interval_minutes_num <- as.numeric(interval_minutes)
+
+    # Snap observed timestamps to the nearest interval grid anchored at the
+    # subject's first timestamp. This prevents off-grid readings such as 11:56
+    # from being preserved separately from generated grid rows such as 11:55.
+    x_minutes_raw <- as.numeric(difftime(
+      g[[time_col]],
+      start_time,
+      units = "mins"
+    ))
+
+    x_minutes_snapped <- round(x_minutes_raw / interval_minutes_num) *
+      interval_minutes_num
+
+    g[[time_col]] <- start_time + x_minutes_snapped * 60
+
+    # If snapping creates duplicate subject-time rows, keep the row with a
+    # non-missing target value first. This avoids losing observed glucose values
+    # when an explicit NA and an observed value map to the same grid time.
+    g <- g[order(g[[time_col]], is.na(g[[target_col]])), , drop = FALSE]
+
+    dup_key <- paste(
+      g[[id_col]],
+      format(g[[time_col]], "%Y-%m-%d %H:%M:%S", tz = "UTC"),
+      sep = "||"
+    )
+
+    g <- g[!duplicated(dup_key), , drop = FALSE]
+
+    x_minutes <- as.numeric(difftime(
+      g[[time_col]],
+      start_time,
+      units = "mins"
+    ))
+
+    grid_minutes <- .cgmd_py_equal_interval_minutes(
+      x_minutes = x_minutes,
+      interval_minutes = interval_minutes
+    )
+
+    grid_times <- start_time + grid_minutes * 60
+    grid <- data.frame(
+      .cgmd_grid_id = rep(id_value, length(grid_times)),
+      .cgmd_grid_time = as.POSIXct(
+        grid_times,
+        origin = "1970-01-01",
+        tz = "UTC"
+      ),
+      stringsAsFactors = FALSE
+    )
+    names(grid) <- c(id_col, time_col)
+
+    merged <- merge(
+      grid,
+      g,
+      by = c(id_col, time_col),
+      all.x = TRUE,
+      sort = TRUE
+    )
+
+    inserted <- is.na(merged[["inserted_timestamp_gap"]])
+    merged[["inserted_timestamp_gap"]][inserted] <- TRUE
+    merged[["inserted_timestamp_gap"]][is.na(merged[[
+      "inserted_timestamp_gap"
+    ]])] <- FALSE
+    merged[["explicit_missing_glucose"]][inserted] <- FALSE
+    merged[["explicit_missing_glucose"]][is.na(merged[[
+      "explicit_missing_glucose"
+    ]])] <- FALSE
+
+    protected_cols <- c(
+      id_col,
+      time_col,
+      target_col,
+      "TimeSeries",
+      "TimeDifferenceMinutes",
+      "inserted_timestamp_gap",
+      "explicit_missing_glucose",
+      "missing_source"
+    )
+    fill_cols <- setdiff(names(merged), protected_cols)
+
+    for (nm in fill_cols) {
+      source_vals <- g[[nm]]
+      source_vals <- source_vals[!is.na(source_vals)]
+      if (length(source_vals) > 0L && length(unique(source_vals)) == 1L) {
+        merged[[nm]][inserted & is.na(merged[[nm]])] <- source_vals[[1L]]
+      }
+    }
+
+    merged[["missing_source"]] <- "observed"
+    merged[["missing_source"]][merged[[
+      "inserted_timestamp_gap"
+    ]]] <- "timestamp_gap"
+    merged[["missing_source"]][
+      !merged[["inserted_timestamp_gap"]] & is.na(merged[[target_col]])
+    ] <- "explicit_na"
+
+    merged <- merged[order(merged[[time_col]]), , drop = FALSE]
+    merged[["TimeSeries"]] <- as.numeric(
+      difftime(merged[[time_col]], start_time, units = "mins")
+    )
+    merged[["TimeDifferenceMinutes"]] <- c(
+      NA_real_,
+      as.numeric(diff(merged[[time_col]]), units = "mins")
+    )
+
+    regularized[[i]] <- merged
+  }
+
+  missing_id_rows <- out[is.na(out[[id_col]]), , drop = FALSE]
+  if (nrow(missing_id_rows) > 0L) {
+    missing_id_rows[["missing_source"]] <- ifelse(
+      is.na(missing_id_rows[[target_col]]),
+      "explicit_na",
+      "observed"
+    )
+    missing_id_rows[["TimeSeries"]] <- NA_real_
+    missing_id_rows[["TimeDifferenceMinutes"]] <- NA_real_
+    regularized[[length(regularized) + 1L]] <- missing_id_rows
+  }
+
+  ans <- do.call(rbind, regularized)
+  ans <- ans[order(ans[[id_col]], ans[[time_col]]), , drop = FALSE]
+  rownames(ans) <- NULL
+  ans
+}
+
+.cgmd_py_equal_interval_minutes <- function(x_minutes, interval_minutes = 5L) {
+  x_minutes <- sort(unique(as.numeric(x_minutes)))
+  x_minutes <- x_minutes[is.finite(x_minutes)]
+
+  if (length(x_minutes) == 0L) {
+    return(numeric(0))
+  }
+
+  interval_minutes <- as.numeric(interval_minutes)
+
+  base_grid <- seq(
+    from = min(x_minutes),
+    to = max(x_minutes),
+    by = interval_minutes
+  )
+
+  # Call CGManalyzer for consistency with the package workflow, but do not use
+  # arbitrary returned times to expand the grid. For imputation, we need a
+  # deterministic interval grid so timestamp gaps become explicit NA rows.
+  invisible(
+    tryCatch(
+      {
+        CGManalyzer::equalInterval.fn(
+          x = x_minutes,
+          y = seq_along(x_minutes),
+          Interval = interval_minutes
+        )
+      },
+      error = function(e) NULL
+    )
+  )
+
+  base_grid
+}
+
 .cgmd_py_add_timeseries_column <- function(
   df,
   ts_col = "timestamp",
@@ -1395,7 +1612,24 @@ run_missing_glucose_imputation <- function(
 
   out
 }
+.cgmd_py_keep_user_output_cols <- function(
+  df,
+  original_cols,
+  imputed_col = "imputed_glucose_value"
+) {
+  out <- as.data.frame(df, stringsAsFactors = FALSE)
 
+  keep_cols <- unique(c(
+    intersect(original_cols, names(out)),
+    imputed_col
+  ))
+
+  keep_cols <- intersect(keep_cols, names(out))
+
+  out <- out[, keep_cols, drop = FALSE]
+  rownames(out) <- NULL
+  out
+}
 .cgmd_py_to_numeric <- function(x) {
   if (is.factor(x)) {
     x <- as.character(x)

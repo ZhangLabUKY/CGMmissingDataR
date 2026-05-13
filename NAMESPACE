@@ -3,6 +3,7 @@
 export(run_app)
 export(run_missing_glucose_imputation)
 export(run_missingness_benchmark)
+importFrom(CGManalyzer,equalInterval.fn)
 importFrom(CGManalyzer,timeSeqConversion.fn)
 importFrom(FNN,knn.reg)
 importFrom(data.table,as.data.table)

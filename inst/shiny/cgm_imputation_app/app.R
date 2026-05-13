@@ -220,7 +220,21 @@ server <- function(input, output, session) {
   output$raw_preview <- renderTable({
     dat <- uploaded_data()
     req(dat)
-    utils::head(dat, 10)
+
+    preview_dat <- utils::head(dat, 10)
+
+    # Force Time columns to exactly match the original CSV format
+    for (col in names(preview_dat)) {
+      if (inherits(preview_dat[[col]], c("POSIXct", "POSIXt", "Date"))) {
+        preview_dat[[col]] <- format(
+          preview_dat[[col]],
+          format = "%Y-%m-%dT%H:%M:%SZ",
+          tz = "UTC"
+        )
+      }
+    }
+
+    preview_dat
   })
 
   warning_threshold <- 20
@@ -387,38 +401,26 @@ server <- function(input, output, session) {
     })
   })
 
-  # output$summary <- renderPrint({
-  #   out <- imputed_data()
-  #   req(out)
-
-  #   cat("Rows:", nrow(out), "\n")
-  #   cat("Columns:", ncol(out), "\n")
-
-  #   if ("missing_rate" %in% names(out)) {
-  #     cat("Missing rate:", unique(out$missing_rate), "\n")
-  #   }
-
-  #   if ("imputation_method" %in% names(out)) {
-  #     cat("Imputation method:", unique(out$imputation_method), "\n")
-  #   }
-
-  #   if ("imputed_glucose_value" %in% names(out)) {
-  #     cat(
-  #       "Missing values in imputed_glucose_value:",
-  #       sum(is.na(out$imputed_glucose_value)),
-  #       "\n"
-  #     )
-  #   }
-  # })
-
   output$imputed_preview <- renderTable({
     out <- imputed_data()
     req(out)
     req(input$target_col)
 
     imputed_rows <- out[is.na(out[[input$target_col]]), , drop = FALSE]
+    preview_dat <- utils::head(imputed_rows, 15)
 
-    utils::head(imputed_rows, 15)
+    # Force Time columns to exactly match the downloaded CSV format
+    for (col in names(preview_dat)) {
+      if (inherits(preview_dat[[col]], c("POSIXct", "POSIXt", "Date"))) {
+        preview_dat[[col]] <- format(
+          preview_dat[[col]],
+          format = "%Y-%m-%dT%H:%M:%SZ",
+          tz = "UTC"
+        )
+      }
+    }
+
+    preview_dat
   })
 
   output$download <- downloadHandler(

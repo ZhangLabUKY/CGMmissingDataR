@@ -2,7 +2,7 @@
 % Please edit documentation in R/imputation.R
 \name{run_missing_glucose_imputation}
 \alias{run_missing_glucose_imputation}
-\title{Impute real missing glucose values using the CGMissingData Python workflow}
+\title{Impute missing glucose values using Mice and ARIMA/XGBoost}
 \usage{
 run_missing_glucose_imputation(
   data,
@@ -79,9 +79,9 @@ always adds this; setting \code{FALSE} is allowed only for compatibility.}
 
 \item{roll_window}{Integer rolling mean window. Python default is 3.}
 
-\item{interval_minutes}{Equal interval in minutes. In the Python-engine path,
-elapsed minutes are computed by subject when \code{TimeSeries} is not already
-present.}
+\item{interval_minutes}{Expected spacing, in minutes, between consecutive CGM
+readings. The default is \code{5}. The function uses this value to regularize
+each subject's timestamps to an equal-interval grid before imputation.}
 
 \item{use_arima_if_missing_leq}{Numeric missing-rate threshold. If the target
 missing rate is less than or equal to this value, segmentwise ARIMA is used;
@@ -103,38 +103,34 @@ existing non-empty \code{TimeSeries} column is supplied.}
 timestamped CSV file in the current working directory. Default is \code{FALSE}.}
 }
 \value{
-A data.frame sorted by \code{id_col} and \code{TimeSeries}, matching the Python
-package output shape. The original target column is left unchanged, so rows
-that were originally missing remain \code{NA} in \code{target_col}.
-\code{imputed_glucose_value} contains the completed target values,
-\code{imputation_method} is either \code{"MICE+ARIMA"} or \code{"MICE+XGBoost"}, and
-\code{missing_rate} is the original target missing rate. Generated lag and
-rolling-mean feature columns are used internally and removed before return.
+A data.frame containing the original user-supplied columns plus
+\code{imputed_glucose_value}, the completed glucose column. The original target
+column is left unchanged, so values that were originally missing or created
+from timestamp gaps remain \code{NA} in \code{target_col}, while their completed
+values are stored in \code{imputed_glucose_value}.
 }
 \description{
-Strict R entry point for the real-missing-value imputation workflow in the
-Python package \code{CGMissingData} 0.1.6. When \code{imputer_backend = "sklearn"}, the
-full strict path is executed in Python through \code{reticulate}: pandas performs
-preprocessing and feature construction, scikit-learn runs
-\code{IterativeImputer}, statsmodels runs segmentwise ARIMA when the missing rate
-is low, and Python xgboost runs the high-missingness branch. The completed
-pandas data frame is then converted back to R.
-
-The R fallback \code{imputer_backend = "mice"} keeps the same R-side pipeline and
-uses the R package \code{mice} for the imputation matrix. No iterative-ridge
-backend is used.
+Imputes missing glucose values in continuous glucose monitoring (CGM) data.
+The function handles both explicit missing glucose values already coded as
+\code{NA} and implicit missing readings caused by timestamp gaps. Before
+imputation, each subject is regularized to an equal \code{interval_minutes}
+timestamp grid; missing timestamp gaps are converted into explicit rows with
+\code{target_col = NA}, then imputed using the selected backend.
 }
 \details{
-For closest Python-package parity, use \code{imputer_backend = "sklearn"} with a
-Python environment containing \code{numpy}, \code{pandas}, \code{scikit-learn},
-\code{statsmodels}, and \code{xgboost}. The sklearn path intentionally calls those
-modules directly rather than wrapping the Python package.
+The imputation workflow first parses and sorts timestamps within each subject.
+Each subject is regularized to an equal \code{interval_minutes} grid. If a reading
+is missing because the timestamp is absent from the input data, a new row is
+inserted and the target glucose value is set to \code{NA}. These inserted missing
+values are then imputed using the same workflow as explicit \code{NA} values.
 
-The ARIMA branch is segmentwise, matching the Python package: within each
-subject, contiguous missing blocks are detected, ARIMA is fit only to the
-MICE-completed history before the block, and forecasts replace the MICE
-values only when there are at least \code{arima_min_history} finite historical
-values and the ARIMA fit succeeds. Otherwise, the MICE value is retained.
+Internally, the function creates time features, lag features, and rolling-mean
+features to support imputation. These engineered columns are used only during
+model fitting and are removed from the returned data frame.
+
+\code{imputed_glucose_value} is returned as a continuous numeric model estimate.
+Users who require whole-number glucose values for reporting can round this
+column after imputation.
 }
 \examples{
 data("CGMExmplDat10Pct")
@@ -146,6 +142,6 @@ out <- run_missing_glucose_imputation(
   time_col = "Time",
   imputer_backend = "mice"
 )
-head(out[, c("LBORRES", "imputed_glucose_value", "imputation_method")])
+head(subset(out, is.na(LBORRES)))
 
 }

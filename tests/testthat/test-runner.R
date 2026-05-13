@@ -9,22 +9,38 @@ test_that("public example dataset has expected missing glucose shape", {
   expect_false("TimeDifferenceMinutes" %in% names(CGMExmplDat10Pct))
 })
 
-expect_strict_imputation_output <- function(out, target_col = "LBORRES") {
+expect_strict_imputation_output <- function(
+  out,
+  target_col = "LBORRES",
+  input_cols = NULL
+) {
   expect_s3_class(out, "data.frame")
-  expect_true(all(
-    c(
-      target_col,
-      "TimeSeries",
-      "imputed_glucose_value",
-      "imputation_method",
-      "missing_rate"
-    ) %in%
-      names(out)
-  ))
+
+  expect_true(target_col %in% names(out))
+  expect_true("imputed_glucose_value" %in% names(out))
+
+  if (!is.null(input_cols)) {
+    expect_true(all(input_cols %in% names(out)))
+    expect_equal(
+      setdiff(names(out), input_cols),
+      "imputed_glucose_value"
+    )
+  }
+
+  internal_cols <- c(
+    "TimeSeries",
+    "TimeDifferenceMinutes",
+    "imputation_method",
+    "missing_rate",
+    "inserted_timestamp_gap",
+    "explicit_missing_glucose",
+    "missing_source",
+    "rollmean"
+  )
+
+  expect_false(any(internal_cols %in% names(out)))
   expect_false(any(grepl("^lag[0-9]+$", names(out))))
-  expect_false("rollmean" %in% names(out))
-  expect_true(all(out$imputation_method %in% c("MICE+ARIMA", "MICE+XGBoost")))
-  expect_true(all(is.finite(out$missing_rate)))
+  expect_false(anyNA(out$imputed_glucose_value))
 }
 
 .test_imputation_data <- function(time_values) {
@@ -87,11 +103,15 @@ test_that("real missing glucose imputation returns strict-port data frame", {
     )
   )
 
-  expect_strict_imputation_output(out)
+  expect_strict_imputation_output(
+    out,
+    target_col = "LBORRES",
+    input_cols = names(CGMExmplDat10Pct)
+  )
+
   expect_equal(nrow(out), nrow(CGMExmplDat10Pct))
   expect_equal(sum(is.na(out$LBORRES)), 50L)
   expect_false(anyNA(out$imputed_glucose_value))
-  expect_equal(unique(out$missing_rate), 50 / 500)
 })
 
 test_that("legacy model argument is ignored with a compatibility warning", {
@@ -115,7 +135,11 @@ test_that("legacy model argument is ignored with a compatibility warning", {
     ),
     regexp = "Strict Python-port mode ignores"
   )
-  expect_strict_imputation_output(out)
+  expect_strict_imputation_output(
+    out,
+    target_col = "LBORRES",
+    input_cols = names(CGMExmplDat10Pct)
+  )
 })
 
 test_that("automatic timestamp parsing accepts common character formats", {
@@ -134,9 +158,17 @@ test_that("automatic timestamp parsing accepts common character formats", {
   )
 
   for (time_values in time_formats) {
-    out <- .run_mice_imputation(.test_imputation_data(time_values))
-    expect_strict_imputation_output(out)
-    expect_false(anyNA(out$TimeSeries))
+    dat <- .test_imputation_data(time_values)
+    out <- .run_mice_imputation(dat)
+
+    expect_strict_imputation_output(
+      out,
+      target_col = "LBORRES",
+      input_cols = names(dat)
+    )
+
+    expect_equal(nrow(out), nrow(dat))
+    expect_equal(sum(is.na(out$LBORRES)), 2L)
   }
 })
 
@@ -147,10 +179,17 @@ test_that("automatic timestamp parsing accepts POSIXct timestamps", {
   base_time <- as.POSIXct("2020-01-16 00:00:00", tz = "UTC") +
     seq(0, by = 300, length.out = 24)
 
-  out <- .run_mice_imputation(.test_imputation_data(base_time))
+  dat <- .test_imputation_data(base_time)
+  out <- .run_mice_imputation(dat)
 
-  expect_strict_imputation_output(out)
-  expect_false(anyNA(out$TimeSeries))
+  expect_strict_imputation_output(
+    out,
+    target_col = "LBORRES",
+    input_cols = names(dat)
+  )
+
+  expect_equal(nrow(out), nrow(dat))
+  expect_equal(sum(is.na(out$LBORRES)), 2L)
 })
 
 test_that("automatic timestamp parsing reports unparseable timestamps", {
@@ -194,7 +233,12 @@ test_that("sklearn Python engine works when explicitly enabled", {
     xgb_nrounds = 5
   )
 
-  expect_strict_imputation_output(out)
+  expect_strict_imputation_output(
+    out,
+    target_col = "LBORRES",
+    input_cols = names(CGMExmplDat10Pct)
+  )
+
   expect_equal(nrow(out), nrow(CGMExmplDat10Pct))
   expect_false(anyNA(out$imputed_glucose_value))
 })
