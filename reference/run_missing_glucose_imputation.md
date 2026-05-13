@@ -196,8 +196,12 @@ out <- run_missing_glucose_imputation(
 #> Warning: The data have already had equal intervals between any two consecutive points. No adjustment!
 #> Warning: The data have already had equal intervals between any two consecutive points. No adjustment!
 #> Warning: Number of logged events: 36
-head(subset(out, is.na("LBORRES")))
-#> [1] USUBJID               LBORRES               Time                 
-#> [4] AGE                   hba1c                 imputed_glucose_value
-#> <0 rows> (or 0-length row.names)
+head(subset(out, is.na(LBORRES)))
+#>    USUBJID LBORRES                Time AGE hba1c imputed_glucose_value
+#> 10      11      NA 2020-01-16 00:45:00  34   6.4             136.17903
+#> 31      11      NA 2020-01-16 02:30:00  34   6.4              81.10538
+#> 32      11      NA 2020-01-16 02:35:00  34   6.4             106.16171
+#> 33      11      NA 2020-01-16 02:40:00  34   6.4              89.92793
+#> 34      11      NA 2020-01-16 02:45:00  34   6.4             106.08171
+#> 55      11      NA 2020-01-16 04:30:00  34   6.4              77.73082
 ```
