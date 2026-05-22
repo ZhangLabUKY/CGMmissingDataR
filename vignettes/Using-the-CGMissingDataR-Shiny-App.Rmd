@@ -184,6 +184,7 @@ ISO-style, and `POSIXct` values.
 Choose additional predictor columns. In the example data, these commonly include:
 
 ```r
+SEX
 AGE
 hba1c
 ```

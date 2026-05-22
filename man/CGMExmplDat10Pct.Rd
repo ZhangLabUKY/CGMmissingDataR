@@ -8,6 +8,7 @@
 A data frame with 500 rows and 5 variables:
 \describe{
 \item{USUBJID}{Numeric subject identifier.}
+\item{SEX}{Synthetic sex of the subject.}
 \item{LBORRES}{Laboratory Observed Result for Glucose (numeric), with
 deterministic missing values.}
 \item{Time}{Raw timestamp in \code{yyyy:mm:dd:hh:nn} format.}

@@ -23,6 +23,9 @@ run_missing_glucose_imputation(
   add_rollmean = TRUE,
   roll_window = 3L,
   interval_minutes = 5L,
+  missing_warning_threshold = 0.2,
+  study_start = NULL,
+  study_end = NULL,
   use_arima_if_missing_leq = 0.05,
   arima_min_history = 20L,
   imputer_backend = c("mice", "sklearn"),
@@ -83,6 +86,18 @@ always adds this; setting \code{FALSE} is allowed only for compatibility.}
 readings. The default is \code{5}. The function uses this value to regularize
 each subject's timestamps to an equal-interval grid before imputation.}
 
+\item{missing_warning_threshold}{Numeric value between 0 and 1. If the
+missingness rate in \code{target_col} after timestamp-gap regularization exceeds
+this threshold, a warning is issued. Default is \code{0.20}.}
+
+\item{study_start}{Optional study start timestamp. If supplied, the function
+reports subjects whose first observed CGM timestamp occurs after this time.
+Leading study time is not imputed.}
+
+\item{study_end}{Optional study end timestamp. If supplied, the function
+reports subjects whose last observed CGM timestamp occurs before this time.
+Trailing study time is not imputed.}
+
 \item{use_arima_if_missing_leq}{Numeric missing-rate threshold. If the target
 missing rate is less than or equal to this value, segmentwise ARIMA is used;
 otherwise XGBoost is used. Python default is 0.05.}
@@ -131,6 +146,13 @@ model fitting and are removed from the returned data frame.
 \code{imputed_glucose_value} is returned as a continuous numeric model estimate.
 Users who require whole-number glucose values for reporting can round this
 column after imputation.
+
+Missingness warnings are based on the data after timestamp-gap
+regularization, so both explicit \code{NA} glucose values and rows created from
+timestamp gaps contribute to the reported missingness rate. The function also
+warns when long contiguous missing blocks of at least 12 or 24 hours are
+detected. If \code{study_start} or \code{study_end} is supplied, leading or trailing
+study-period coverage gaps are reported but are not imputed.
 }
 \examples{
 data("CGMExmplDat10Pct")

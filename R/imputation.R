@@ -599,6 +599,15 @@ run_comprehensive_imputation_benchmark <- function(
 #' @param interval_minutes Expected spacing, in minutes, between consecutive CGM
 #'   readings. The default is `5`. The function uses this value to regularize
 #'   each subject's timestamps to an equal-interval grid before imputation.
+#' @param missing_warning_threshold Numeric value between 0 and 1. If the
+#'   missingness rate in `target_col` after timestamp-gap regularization exceeds
+#'   this threshold, a warning is issued. Default is `0.20`.
+#' @param study_start Optional study start timestamp. If supplied, the function
+#'   reports subjects whose first observed CGM timestamp occurs after this time.
+#'   Leading study time is not imputed.
+#' @param study_end Optional study end timestamp. If supplied, the function
+#'   reports subjects whose last observed CGM timestamp occurs before this time.
+#'   Trailing study time is not imputed.
 #' @param use_arima_if_missing_leq Numeric missing-rate threshold. If the target
 #'   missing rate is less than or equal to this value, segmentwise ARIMA is used;
 #'   otherwise XGBoost is used. Python default is 0.05.
@@ -635,6 +644,12 @@ run_comprehensive_imputation_benchmark <- function(
 #' Users who require whole-number glucose values for reporting can round this
 #' column after imputation.
 #'
+#' Missingness warnings are based on the data after timestamp-gap
+#' regularization, so both explicit `NA` glucose values and rows created from
+#' timestamp gaps contribute to the reported missingness rate. The function also
+#' warns when long contiguous missing blocks of at least 12 or 24 hours are
+#' detected. If `study_start` or `study_end` is supplied, leading or trailing
+#' study-period coverage gaps are reported but are not imputed.
 #' @examples
 #' data("CGMExmplDat10Pct")
 #' out <- run_missing_glucose_imputation(
@@ -669,6 +684,9 @@ run_missing_glucose_imputation <- function(
   add_rollmean = TRUE,
   roll_window = 3L,
   interval_minutes = 5L,
+  missing_warning_threshold = 0.20,
+  study_start = NULL,
+  study_end = NULL,
   use_arima_if_missing_leq = 0.05,
   arima_min_history = 20L,
   imputer_backend = c("mice", "sklearn"),
@@ -688,6 +706,18 @@ run_missing_glucose_imputation <- function(
   }
   if (length(arima_order) != 3L || any(!is.finite(arima_order))) {
     stop("arima_order must be a finite numeric vector of length 3.")
+  }
+  if (
+    !is.numeric(missing_warning_threshold) ||
+      length(missing_warning_threshold) != 1L ||
+      is.na(missing_warning_threshold) ||
+      missing_warning_threshold < 0 ||
+      missing_warning_threshold > 1
+  ) {
+    stop(
+      "missing_warning_threshold must be a single numeric value between 0 and 1.",
+      call. = FALSE
+    )
   }
   arima_order <- as.integer(arima_order)
   lag_k <- as.integer(lag_k)
@@ -750,16 +780,16 @@ run_missing_glucose_imputation <- function(
     interval_minutes = interval_minutes
   )
 
-  target_missing_rate <- mean(is.na(out[[target_col]]))
-  if (target_missing_rate > 0.20) {
-    message(
-      sprintf(
-        "Warning: target_col '%s' has %.1f%% missing values after timestamp-gap regularization. Imputed values may be less reliable when the missing rate is high.",
-        target_col,
-        target_missing_rate * 100
-      )
-    )
-  }
+  missingness_diagnostics <- .cgmd_py_warn_missingness(
+    df = out,
+    id_col = id_col,
+    time_col = time_col,
+    target_col = target_col,
+    interval_minutes = interval_minutes,
+    missing_warning_threshold = missing_warning_threshold,
+    study_start = study_start,
+    study_end = study_end
+  )
 
   if (identical(imputer_backend, "sklearn")) {
     result <- .cgmd_py_run_python_engine(
@@ -1337,6 +1367,211 @@ run_missing_glucose_imputation <- function(
   ans <- ans[order(ans[[id_col]], ans[[time_col]]), , drop = FALSE]
   rownames(ans) <- NULL
   ans
+}
+.cgmd_py_warn_missingness <- function(
+  df,
+  id_col,
+  time_col,
+  target_col,
+  interval_minutes = 5L,
+  missing_warning_threshold = 0.20,
+  study_start = NULL,
+  study_end = NULL
+) {
+  out <- as.data.frame(df, stringsAsFactors = FALSE)
+
+  if (!id_col %in% names(out)) {
+    stop("Missing required id_col: ", id_col, call. = FALSE)
+  }
+  if (!time_col %in% names(out)) {
+    stop("Missing required time_col: ", time_col, call. = FALSE)
+  }
+  if (!target_col %in% names(out)) {
+    stop("Missing required target_col: ", target_col, call. = FALSE)
+  }
+
+  interval_minutes <- as.numeric(interval_minutes)
+
+  missing_pos <- is.na(out[[target_col]])
+  missing_n <- sum(missing_pos)
+  total_n <- nrow(out)
+  missing_rate <- if (total_n > 0L) missing_n / total_n else NA_real_
+
+  if (is.finite(missing_rate) && missing_rate > missing_warning_threshold) {
+    warning(
+      sprintf(
+        "High missingness after timestamp-gap regularization: %.1f%% of '%s' values are missing (%s of %s rows). Imputed values may be less reliable when missingness is high.",
+        missing_rate * 100,
+        target_col,
+        missing_n,
+        total_n
+      ),
+      call. = FALSE
+    )
+  }
+
+  half_day_rows <- ceiling((12 * 60) / interval_minutes)
+  full_day_rows <- ceiling((24 * 60) / interval_minutes)
+
+  id_values <- unique(out[[id_col]])
+  id_values <- id_values[!is.na(id_values)]
+
+  long_gap_messages <- character(0)
+
+  for (id_value in id_values) {
+    g <- out[!is.na(out[[id_col]]) & out[[id_col]] == id_value, , drop = FALSE]
+    g <- g[order(g[[time_col]]), , drop = FALSE]
+
+    miss <- is.na(g[[target_col]])
+    if (!any(miss)) {
+      next
+    }
+
+    rr <- rle(miss)
+    ends <- cumsum(rr$lengths)
+    starts <- ends - rr$lengths + 1L
+    missing_runs <- which(rr$values)
+
+    if (length(missing_runs) == 0L) {
+      next
+    }
+
+    run_lengths <- rr$lengths[missing_runs]
+    max_run_idx <- missing_runs[which.max(run_lengths)]
+    max_run_len <- rr$lengths[max_run_idx]
+
+    if (max_run_len >= half_day_rows) {
+      start_i <- starts[max_run_idx]
+      end_i <- ends[max_run_idx]
+
+      gap_start <- g[[time_col]][start_i]
+      gap_end <- g[[time_col]][end_i]
+      gap_hours <- max_run_len * interval_minutes / 60
+
+      severity <- if (max_run_len >= full_day_rows) {
+        "at least one full day"
+      } else {
+        "at least one half day"
+      }
+
+      long_gap_messages <- c(
+        long_gap_messages,
+        sprintf(
+          "Subject %s has a contiguous missing block of %s (%.1f hours), from %s to %s.",
+          as.character(id_value),
+          severity,
+          gap_hours,
+          format(gap_start, "%Y-%m-%d %H:%M:%S"),
+          format(gap_end, "%Y-%m-%d %H:%M:%S")
+        )
+      )
+    }
+  }
+
+  if (length(long_gap_messages) > 0L) {
+    warning(
+      paste(
+        c(
+          "Long contiguous missing glucose blocks were detected after timestamp-gap regularization:",
+          long_gap_messages
+        ),
+        collapse = "\n"
+      ),
+      call. = FALSE
+    )
+  }
+
+  study_start_parsed <- .cgmd_py_parse_boundary_time(study_start, "study_start")
+  study_end_parsed <- .cgmd_py_parse_boundary_time(study_end, "study_end")
+
+  boundary_messages <- character(0)
+
+  if (!is.null(study_start_parsed) || !is.null(study_end_parsed)) {
+    for (id_value in id_values) {
+      g <- out[
+        !is.na(out[[id_col]]) & out[[id_col]] == id_value,
+        ,
+        drop = FALSE
+      ]
+      g <- g[order(g[[time_col]]), , drop = FALSE]
+
+      first_obs <- min(g[[time_col]], na.rm = TRUE)
+      last_obs <- max(g[[time_col]], na.rm = TRUE)
+
+      if (!is.null(study_start_parsed)) {
+        leading_minutes <- as.numeric(
+          difftime(first_obs, study_start_parsed, units = "mins")
+        )
+
+        if (is.finite(leading_minutes) && leading_minutes >= interval_minutes) {
+          boundary_messages <- c(
+            boundary_messages,
+            sprintf(
+              "Subject %s starts %.1f hours after study_start. Leading study time is not imputed.",
+              as.character(id_value),
+              leading_minutes / 60
+            )
+          )
+        }
+      }
+
+      if (!is.null(study_end_parsed)) {
+        trailing_minutes <- as.numeric(
+          difftime(study_end_parsed, last_obs, units = "mins")
+        )
+
+        if (
+          is.finite(trailing_minutes) && trailing_minutes >= interval_minutes
+        ) {
+          boundary_messages <- c(
+            boundary_messages,
+            sprintf(
+              "Subject %s ends %.1f hours before study_end. Trailing study time is not imputed.",
+              as.character(id_value),
+              trailing_minutes / 60
+            )
+          )
+        }
+      }
+    }
+  }
+
+  if (length(boundary_messages) > 0L) {
+    message(
+      paste(
+        c(
+          "Study boundary coverage note:",
+          boundary_messages
+        ),
+        collapse = "\n"
+      )
+    )
+  }
+
+  invisible(list(
+    missing_n = missing_n,
+    total_n = total_n,
+    missing_rate = missing_rate,
+    missing_warning_threshold = missing_warning_threshold
+  ))
+}
+
+.cgmd_py_parse_boundary_time <- function(x, nm) {
+  if (is.null(x)) {
+    return(NULL)
+  }
+
+  if (length(x) != 1L) {
+    stop(nm, " must be NULL or a single timestamp value.", call. = FALSE)
+  }
+
+  parsed <- .cgmd_py_parse_timestamp(x)
+
+  if (length(parsed) != 1L || is.na(parsed)) {
+    stop(nm, " could not be parsed as a timestamp.", call. = FALSE)
+  }
+
+  parsed
 }
 
 .cgmd_py_equal_interval_minutes <- function(x_minutes, interval_minutes = 5L) {

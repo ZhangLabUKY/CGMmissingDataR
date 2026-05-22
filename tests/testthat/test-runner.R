@@ -1,10 +1,10 @@
 test_that("public example dataset has expected missing glucose shape", {
   data("CGMExmplDat10Pct", package = "CGMissingDataR")
 
-  expect_equal(nrow(CGMExmplDat10Pct), 500L)
-  expect_equal(ncol(CGMExmplDat10Pct), 5L)
+  expect_equal(nrow(CGMExmplDat10Pct), 1440L)
+  expect_equal(ncol(CGMExmplDat10Pct), 6L)
   expect_equal(length(unique(CGMExmplDat10Pct$USUBJID)), 5L)
-  expect_equal(sum(is.na(CGMExmplDat10Pct$LBORRES)), 50L)
+  expect_equal(sum(is.na(CGMExmplDat10Pct$LBORRES)), 144L)
   expect_false("TimeSeries" %in% names(CGMExmplDat10Pct))
   expect_false("TimeDifferenceMinutes" %in% names(CGMExmplDat10Pct))
 })
@@ -110,7 +110,7 @@ test_that("real missing glucose imputation returns strict-port data frame", {
   )
 
   expect_equal(nrow(out), nrow(CGMExmplDat10Pct))
-  expect_equal(sum(is.na(out$LBORRES)), 50L)
+  expect_equal(sum(is.na(out$LBORRES)), 144L)
   expect_false(anyNA(out$imputed_glucose_value))
 })
 

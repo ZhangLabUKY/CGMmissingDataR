@@ -109,7 +109,7 @@ At minimum, the imputation function needs:
 | Glucose value to impute | `target_col` | `LBORRES` |
 | Subject identifier | `id_col` | `USUBJID` |
 | Raw timestamp | `time_col` | `Time` |
-| Additional predictors | `feature_cols` | `AGE`, `hba1c` |
+| Additional predictors | `feature_cols` | `AGE`, `hba1c`, `SEX` |
 
 The target column may contain missing values. Predictor columns should be numeric
 or coercible to numeric. The `SEX` column, when present, is internally encoded
@@ -166,7 +166,7 @@ impute_out <- suppressWarnings(
   run_missing_glucose_imputation(
     CGMExmplDat10Pct,
     target_col = "LBORRES",
-    feature_cols = c("AGE", "hba1c"),
+    feature_cols = c("AGE", "hba1c", "SEX"),
     id_col = "USUBJID",
     time_col = "Time",
     imputer_backend = "mice",
@@ -195,6 +195,7 @@ The returned columns are the original user-supplied columns plus
 ```{r output-preview}
 head(impute_out[c(
   "USUBJID",
+  "SEX",
   "Time",
   "LBORRES",
   "AGE",
