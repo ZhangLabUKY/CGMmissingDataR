@@ -2,7 +2,7 @@
 % Please edit documentation in R/imputation.R
 \name{run_missing_glucose_imputation}
 \alias{run_missing_glucose_imputation}
-\title{Impute missing glucose values using Mice and ARIMA/XGBoost}
+\title{Impute missing glucose values using selectable MICE-based methods}
 \usage{
 run_missing_glucose_imputation(
   data,
@@ -29,7 +29,6 @@ run_missing_glucose_imputation(
   use_arima_if_missing_leq = 0.05,
   arima_min_history = 20L,
   imputer_backend = c("mice", "sklearn"),
-  prefer_cgmanalyzer_equal_interval = FALSE,
   export = FALSE
 )
 }
@@ -59,28 +58,31 @@ Python-engine path uses pandas timestamp parsing.}
 \item{time_unit}{Retained for compatibility with the old R function and not
 used by the strict Python-engine path.}
 
-\item{models}{Real-imputation method selector. Use \code{NULL} or \code{"auto"} to
-keep the default missing-rate rule: \code{MICE+ARIMA} when the target missing
+\item{models}{Final real-imputation method selector. Use \code{NULL} or \code{"auto"}
+to keep the default missing-rate rule: \code{MICE+ARIMA} when the target missing
 rate is less than or equal to \code{use_arima_if_missing_leq}, otherwise
-\code{MICE+XGBoost}. Use one of \code{"arima"}, \code{"xgboost"}, \code{"rf"}, \code{"knn"}, or
-\code{"lightgbm"} to force a specific method regardless of missing rate.}
+\code{MICE+XGBoost}. Use exactly one of \code{"arima"}, \code{"xgboost"}, \code{"rf"},
+\code{"knn"}, or \code{"lightgbm"} to force a specific method regardless of missing
+rate.}
 
-\item{rf_n_estimators}{Integer: number of Random Forest trees. Only used
-when \code{models = "rf"}.}
+\item{rf_n_estimators}{Integer number of Random Forest trees. Used when
+\code{models = "rf"}.}
 
-\item{knn_k}{Integer: number of nearest neighbors. Only used when
+\item{knn_k}{Integer number of nearest neighbors. Used when
 \code{models = "knn"}.}
 
-\item{xgb_nrounds}{Integer: number of XGBoost boosting rounds. Python's
-\code{n_estimators} default is 300.}
+\item{xgb_nrounds}{Integer number of XGBoost boosting rounds. Used when
+\code{models = "xgboost"} and may be used by \code{models = "auto"} when the
+missing-rate rule selects XGBoost.}
 
-\item{lgb_nrounds}{Integer: number of LightGBM boosting rounds. Only used
-when \code{models = "lightgbm"}.}
+\item{lgb_nrounds}{Integer number of LightGBM boosting rounds. Used when
+\code{models = "lightgbm"}.}
 
 \item{arima_order}{Integer vector of length 3. Python default is
 \code{c(4L, 1L, 0L)}.}
 
-\item{seed}{Integer seed for scikit-learn and XGBoost. Python default is 42.}
+\item{seed}{Integer seed for reproducible MICE, tree-based models, and the
+Python-compatible backend. Default is 42.}
 
 \item{lag_k}{Integer vector of target lags to compute. Python default is
 \code{c(1L, 2L, 3L)}.}
@@ -106,21 +108,17 @@ Leading study time is not imputed.}
 reports subjects whose last observed CGM timestamp occurs before this time.
 Trailing study time is not imputed.}
 
-\item{use_arima_if_missing_leq}{Numeric missing-rate threshold. If the target
-missing rate is less than or equal to this value, segmentwise ARIMA is used;
-otherwise XGBoost is used. Python default is 0.05.}
+\item{use_arima_if_missing_leq}{Numeric missing-rate threshold used only when
+\code{models} is \code{NULL} or \code{"auto"}. If the target missing rate is less than or
+equal to this value, segmentwise ARIMA is used; otherwise XGBoost is used.
+Default is 0.05.}
 
 \item{arima_min_history}{Minimum number of prior observations required before
 fitting ARIMA for a missing segment. Python default is 20.}
 
 \item{imputer_backend}{One of \code{"mice"} or \code{"sklearn"}. \code{"mice"} uses the
-R package \code{mice} as the CRAN-safe R-native fallback. \code{"sklearn"} uses
-Python modules through \code{reticulate} for the full strict workflow and gives
-the closest agreement with the Python package.}
-
-\item{prefer_cgmanalyzer_equal_interval}{Retained for compatibility. The
-Python-engine path uses pandas elapsed-minute construction unless an
-existing non-empty \code{TimeSeries} column is supplied.}
+R package \code{mice} as the CRAN-safe R-native backend. \code{"sklearn"} uses
+Python modules through \code{reticulate} for a Python-compatible workflow.}
 
 \item{export}{Logical; if \code{TRUE}, writes the returned imputed data frame to a
 timestamped CSV file in the current working directory. Default is \code{FALSE}.}
@@ -138,18 +136,25 @@ The function handles both explicit missing glucose values already coded as
 \code{NA} and implicit missing readings caused by timestamp gaps. Before
 imputation, each subject is regularized to an equal \code{interval_minutes}
 timestamp grid; missing timestamp gaps are converted into explicit rows with
-\code{target_col = NA}, then imputed using the selected backend.
+\code{target_col = NA}, then imputed using the selected backend and final
+imputation method.
 }
 \details{
 The imputation workflow first parses and sorts timestamps within each subject.
 Each subject is regularized to an equal \code{interval_minutes} grid. If a reading
 is missing because the timestamp is absent from the input data, a new row is
 inserted and the target glucose value is set to \code{NA}. These inserted missing
-values are then imputed using the same workflow as explicit \code{NA} values.
+values are then imputed using the same workflow as explicit \code{NA} values. The
+deterministic interval grid is controlled by this package; \code{CGManalyzer}'s
+equal-interval helper is called internally for workflow consistency.
 
 Internally, the function creates time features, lag features, and rolling-mean
-features to support imputation. These engineered columns are used only during
-model fitting and are removed from the returned data frame.
+features to support imputation. MICE first completes the target and feature
+matrix. The selected final method then fills the missing glucose positions in
+\code{imputed_glucose_value}: either by segmentwise ARIMA or by a supervised model
+trained on observed glucose values and the MICE-completed feature matrix.
+These engineered columns are used only during model fitting and are removed
+from the returned data frame.
 
 \code{imputed_glucose_value} is returned as a continuous numeric model estimate.
 Users who require whole-number glucose values for reporting can round this
@@ -163,9 +168,9 @@ detected. If \code{study_start} or \code{study_end} is supplied, leading or trai
 study-period coverage gaps are reported but are not imputed.
 }
 \examples{
-data("CGMExmplDat10Pct")
+data("CGMExmplDat5Pct")
 out <- run_missing_glucose_imputation(
-  CGMExmplDat10Pct,
+  CGMExmplDat5Pct,
   target_col = "LBORRES",
   feature_cols = c("AGE", "hba1c"),
   id_col = "USUBJID",

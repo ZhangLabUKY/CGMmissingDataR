@@ -553,7 +553,7 @@ run_comprehensive_imputation_benchmark <- function(
 }
 
 
-#' Impute missing glucose values using Mice and ARIMA/XGBoost
+#' Impute missing glucose values using selectable MICE-based methods
 #'
 #' @description
 #' Imputes missing glucose values in continuous glucose monitoring (CGM) data.
@@ -561,7 +561,8 @@ run_comprehensive_imputation_benchmark <- function(
 #' `NA` and implicit missing readings caused by timestamp gaps. Before
 #' imputation, each subject is regularized to an equal `interval_minutes`
 #' timestamp grid; missing timestamp gaps are converted into explicit rows with
-#' `target_col = NA`, then imputed using the selected backend.
+#' `target_col = NA`, then imputed using the selected backend and final
+#' imputation method.
 #'
 #' @param data A data.frame, an object coercible to data.frame, or a path to a
 #'   CSV file.
@@ -581,22 +582,25 @@ run_comprehensive_imputation_benchmark <- function(
 #'   Python-engine path uses pandas timestamp parsing.
 #' @param time_unit Retained for compatibility with the old R function and not
 #'   used by the strict Python-engine path.
-#' @param models Real-imputation method selector. Use `NULL` or `"auto"` to
-#'   keep the default missing-rate rule: `MICE+ARIMA` when the target missing
+#' @param models Final real-imputation method selector. Use `NULL` or `"auto"`
+#'   to keep the default missing-rate rule: `MICE+ARIMA` when the target missing
 #'   rate is less than or equal to `use_arima_if_missing_leq`, otherwise
-#'   `MICE+XGBoost`. Use one of `"arima"`, `"xgboost"`, `"rf"`, `"knn"`, or
-#'   `"lightgbm"` to force a specific method regardless of missing rate.
-#' @param rf_n_estimators Integer: number of Random Forest trees. Only used
-#'   when `models = "rf"`.
-#' @param knn_k Integer: number of nearest neighbors. Only used when
+#'   `MICE+XGBoost`. Use exactly one of `"arima"`, `"xgboost"`, `"rf"`,
+#'   `"knn"`, or `"lightgbm"` to force a specific method regardless of missing
+#'   rate.
+#' @param rf_n_estimators Integer number of Random Forest trees. Used when
+#'   `models = "rf"`.
+#' @param knn_k Integer number of nearest neighbors. Used when
 #'   `models = "knn"`.
-#' @param lgb_nrounds Integer: number of LightGBM boosting rounds. Only used
-#'   when `models = "lightgbm"`.
-#' @param xgb_nrounds Integer: number of XGBoost boosting rounds. Python's
-#'   `n_estimators` default is 300.
+#' @param lgb_nrounds Integer number of LightGBM boosting rounds. Used when
+#'   `models = "lightgbm"`.
+#' @param xgb_nrounds Integer number of XGBoost boosting rounds. Used when
+#'   `models = "xgboost"` and may be used by `models = "auto"` when the
+#'   missing-rate rule selects XGBoost.
 #' @param arima_order Integer vector of length 3. Python default is
 #'   `c(4L, 1L, 0L)`.
-#' @param seed Integer seed for scikit-learn and XGBoost. Python default is 42.
+#' @param seed Integer seed for reproducible MICE, tree-based models, and the
+#'   Python-compatible backend. Default is 42.
 #' @param lag_k Integer vector of target lags to compute. Python default is
 #'   `c(1L, 2L, 3L)`.
 #' @param add_rollmean Logical: add rolling mean of prior target values. Python
@@ -614,18 +618,15 @@ run_comprehensive_imputation_benchmark <- function(
 #' @param study_end Optional study end timestamp. If supplied, the function
 #'   reports subjects whose last observed CGM timestamp occurs before this time.
 #'   Trailing study time is not imputed.
-#' @param use_arima_if_missing_leq Numeric missing-rate threshold. If the target
-#'   missing rate is less than or equal to this value, segmentwise ARIMA is used;
-#'   otherwise XGBoost is used. Python default is 0.05.
+#' @param use_arima_if_missing_leq Numeric missing-rate threshold used only when
+#'   `models` is `NULL` or `"auto"`. If the target missing rate is less than or
+#'   equal to this value, segmentwise ARIMA is used; otherwise XGBoost is used.
+#'   Default is 0.05.
 #' @param arima_min_history Minimum number of prior observations required before
 #'   fitting ARIMA for a missing segment. Python default is 20.
 #' @param imputer_backend One of `"mice"` or `"sklearn"`. `"mice"` uses the
-#'   R package `mice` as the CRAN-safe R-native fallback. `"sklearn"` uses
-#'   Python modules through `reticulate` for the full strict workflow and gives
-#'   the closest agreement with the Python package.
-#' @param prefer_cgmanalyzer_equal_interval Retained for compatibility. The
-#'   Python-engine path uses pandas elapsed-minute construction unless an
-#'   existing non-empty `TimeSeries` column is supplied.
+#'   R package `mice` as the CRAN-safe R-native backend. `"sklearn"` uses
+#'   Python modules through `reticulate` for a Python-compatible workflow.
 #' @param export Logical; if `TRUE`, writes the returned imputed data frame to a
 #'   timestamped CSV file in the current working directory. Default is `FALSE`.
 #'
@@ -640,11 +641,17 @@ run_comprehensive_imputation_benchmark <- function(
 #' Each subject is regularized to an equal `interval_minutes` grid. If a reading
 #' is missing because the timestamp is absent from the input data, a new row is
 #' inserted and the target glucose value is set to `NA`. These inserted missing
-#' values are then imputed using the same workflow as explicit `NA` values.
+#' values are then imputed using the same workflow as explicit `NA` values. The
+#' deterministic interval grid is controlled by this package; `CGManalyzer`'s
+#' equal-interval helper is called internally for workflow consistency.
 #'
 #' Internally, the function creates time features, lag features, and rolling-mean
-#' features to support imputation. These engineered columns are used only during
-#' model fitting and are removed from the returned data frame.
+#' features to support imputation. MICE first completes the target and feature
+#' matrix. The selected final method then fills the missing glucose positions in
+#' `imputed_glucose_value`: either by segmentwise ARIMA or by a supervised model
+#' trained on observed glucose values and the MICE-completed feature matrix.
+#' These engineered columns are used only during model fitting and are removed
+#' from the returned data frame.
 #'
 #' `imputed_glucose_value` is returned as a continuous numeric model estimate.
 #' Users who require whole-number glucose values for reporting can round this
@@ -657,9 +664,9 @@ run_comprehensive_imputation_benchmark <- function(
 #' detected. If `study_start` or `study_end` is supplied, leading or trailing
 #' study-period coverage gaps are reported but are not imputed.
 #' @examples
-#' data("CGMExmplDat10Pct")
+#' data("CGMExmplDat5Pct")
 #' out <- run_missing_glucose_imputation(
-#'   CGMExmplDat10Pct,
+#'   CGMExmplDat5Pct,
 #'   target_col = "LBORRES",
 #'   feature_cols = c("AGE", "hba1c"),
 #'   id_col = "USUBJID",
@@ -696,7 +703,6 @@ run_missing_glucose_imputation <- function(
   use_arima_if_missing_leq = 0.05,
   arima_min_history = 20L,
   imputer_backend = c("mice", "sklearn"),
-  prefer_cgmanalyzer_equal_interval = FALSE,
   export = FALSE
 ) {
   imputer_backend <- match.arg(imputer_backend)
@@ -821,8 +827,7 @@ run_missing_glucose_imputation <- function(
     df = out,
     ts_col = time_col,
     id_col = id_col,
-    interval_minutes = interval_minutes,
-    prefer_cgmanalyzer = prefer_cgmanalyzer_equal_interval
+    interval_minutes = interval_minutes
   )
 
   out <- .cgmd_py_encode_sex(out, "SEX")
@@ -1682,11 +1687,11 @@ run_missing_glucose_imputation <- function(
   invisible(
     tryCatch(
       {
-        CGManalyzer::equalInterval.fn(
+        suppressWarnings(CGManalyzer::equalInterval.fn(
           x = x_minutes,
           y = seq_along(x_minutes),
           Interval = interval_minutes
-        )
+        ))
       },
       error = function(e) NULL
     )
@@ -1699,8 +1704,7 @@ run_missing_glucose_imputation <- function(
   df,
   ts_col = "timestamp",
   id_col = "subjectid",
-  interval_minutes = 5L,
-  prefer_cgmanalyzer = TRUE
+  interval_minutes = 5L
 ) {
   out <- as.data.frame(df, stringsAsFactors = FALSE)
   if (!ts_col %in% names(out)) {
@@ -1715,24 +1719,6 @@ run_missing_glucose_imputation <- function(
   parsed <- .cgmd_py_parse_timestamp(out[[ts_col]])
   if (any(is.na(parsed))) {
     stop("Some timestamp values could not be parsed.", call. = FALSE)
-  }
-
-  if (
-    isTRUE(prefer_cgmanalyzer) &&
-      requireNamespace("CGManalyzer", quietly = TRUE)
-  ) {
-    ans <- tryCatch(
-      .cgmd_py_add_timeseries_equal_interval(
-        out = out,
-        parsed = parsed,
-        id_col = id_col,
-        interval_minutes = interval_minutes
-      ),
-      error = function(e) NULL
-    )
-    if (!is.null(ans)) {
-      return(ans)
-    }
   }
 
   .cgmd_py_timeseries_fallback(out = out, parsed = parsed, id_col = id_col)
@@ -2065,58 +2051,6 @@ run_missing_glucose_imputation <- function(
   parsed
 }
 
-.cgmd_py_add_timeseries_equal_interval <- function(
-  out,
-  parsed,
-  id_col,
-  interval_minutes
-) {
-  out[["TimeSeries"]] <- NA_real_
-
-  if (id_col %in% names(out)) {
-    ids <- out[[id_col]]
-    id_values <- unique(ids)
-    id_values <- id_values[!is.na(id_values)]
-    groups <- lapply(id_values, function(idv) which(!is.na(ids) & ids == idv))
-  } else {
-    groups <- list(seq_len(nrow(out)))
-  }
-
-  for (idx in groups) {
-    if (length(idx) == 0L) {
-      next
-    }
-    idx_sorted <- idx[order(parsed[idx], na.last = TRUE)]
-    first_time <- min(parsed[idx_sorted], na.rm = TRUE)
-    x_minutes <- as.numeric(difftime(
-      parsed[idx_sorted],
-      first_time,
-      units = "mins"
-    ))
-    dummy_y <- seq_along(idx_sorted) - 1L
-
-    r_times <- tryCatch(
-      {
-        r_result <- CGManalyzer::equalInterval.fn(
-          x = x_minutes,
-          y = dummy_y,
-          Interval = as.integer(interval_minutes)
-        )
-        as.numeric(as.data.frame(r_result)[[1L]])
-      },
-      error = function(e) numeric(0)
-    )
-
-    if (length(r_times) >= length(idx_sorted)) {
-      out[["TimeSeries"]][idx_sorted] <- r_times[seq_along(idx_sorted)]
-    } else {
-      out[["TimeSeries"]][idx_sorted] <- x_minutes
-    }
-  }
-
-  out
-}
-
 .cgmd_py_timeseries_fallback <- function(out, parsed, id_col) {
   out[[".cgmd_ts_parsed"]] <- parsed
 
@@ -2389,12 +2323,14 @@ run_missing_glucose_imputation <- function(
   .cgmd_assert_all_finite_matrix(X_missing_sc, "X_missing_sc")
 
   k <- max(1L, min(as.integer(k), nrow(X_train_sc)))
-  as.numeric(FNN::knn.reg(
-    train = X_train_sc,
-    test = X_missing_sc,
-    y = y_train,
-    k = k
-  )$pred)
+  as.numeric(
+    FNN::knn.reg(
+      train = X_train_sc,
+      test = X_missing_sc,
+      y = y_train,
+      k = k
+    )$pred
+  )
 }
 
 .cgmd_py_fit_lgb_predict_missing <- function(

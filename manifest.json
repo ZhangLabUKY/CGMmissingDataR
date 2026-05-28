@@ -14,15 +14,6 @@
       "requires": ">= 4.3"
     }
   },
-  "python": {
-    "version": "3.13.0",
-    "requires": null,
-    "package_manager": {
-      "name": "pip",
-      "version": "26.1.1",
-      "package_file": "requirements.txt"
-    }
-  },
   "packages": {
     "CGManalyzer": {
       "Source": "CRAN",
@@ -1637,7 +1628,7 @@
         "Maintainer": "Hadley Wickham <hadley@posit.co>",
         "Repository": "CRAN",
         "Date/Publication": "2025-05-30 14:10:02 UTC",
-        "Built": "R 4.5.0; x86_64-w64-mingw32; 2025-05-30 23:50:41 UTC; windows",
+        "Built": "R 4.5.3; x86_64-w64-mingw32; 2026-05-23 19:47:04 UTC; windows",
         "Archs": "x64"
       }
     },
@@ -4373,13 +4364,13 @@
       "checksum": "5b617f468c5ae8086e3a0f5f64892c05"
     },
     ".Rbuildignore": {
-      "checksum": "767e49ec907c1c9d32540bbb807ed095"
+      "checksum": "2f508d56607991cad5f38e8009fda8d2"
     },
     "_pkgdown.yml": {
-      "checksum": "4e02ab5814f2107afb15682771d8fe77"
+      "checksum": "b1a08d004ae962f321d14170de9f6047"
     },
     "app.R": {
-      "checksum": "8c7f93c5b091910eb33879afcdf85904"
+      "checksum": "29c4bcbd151dd1c21b3d6d7dab3fb0df"
     },
     "comprehensive_imputation_script_v2.R": {
       "checksum": "ac93983e24ad9b1ebe710d265f7f00ee"
@@ -4391,13 +4382,13 @@
       "checksum": "6ade3e0b4fd2958c3f326eee88f2d83f"
     },
     "data-raw/CGMExmplDat10Pct.csv": {
-      "checksum": "994b323f713c5d3a738fdc72fc1ba926"
+      "checksum": "71087070c4feacfb2e130e81b16572b7"
     },
     "data-raw/CGMExmplDat5Pct-v2.csv": {
       "checksum": "20a9c8c9a499df88477149ea43546111"
     },
     "data-raw/CGMExmplDat5Pct.csv": {
-      "checksum": "852f847adcdb3da1b56ebd4b7f3d01ca"
+      "checksum": "a8ebf9ecc0a13ee42f950dd056e726c6"
     },
     "data-raw/Test-Data-2.csv": {
       "checksum": "8a4441ba5c469f98d44faf914c630aa0"
@@ -4406,61 +4397,61 @@
       "checksum": "d571556f1370dc52c82063cc4b997ce2"
     },
     "data/CGMExmplDat10Pct.rda": {
-      "checksum": "038f7b74100b55cf9d2fd1bee418eedc"
+      "checksum": "8578016224ca853099c9e43d7d51eb64"
     },
     "data/CGMExmplDat5Pct.rda": {
-      "checksum": "816faaaf644d9665cff3a05e3b46d3d3"
+      "checksum": "f6ade1c56b3258d587784382fbcc8420"
     },
     "DESCRIPTION": {
-      "checksum": "e8621ec61abe9ab689d9699951b932e2"
+      "checksum": "3059aa416cb120eb450f5f241563759f"
     },
     "doc/How-To-Use-CGMissingDataR.html": {
-      "checksum": "274f5928681ff7bb1770cc74164f8e05"
+      "checksum": "42def99e38c8216eac3a6a3f734cac09"
     },
     "doc/How-To-Use-CGMissingDataR.R": {
       "checksum": "d336160793b25a7644a367619d4f65bf"
     },
     "doc/How-To-Use-CGMissingDataR.Rmd": {
-      "checksum": "f4687da1862ac43d450559489d71b9b9"
+      "checksum": "9fcb6ab2dd29e738901e193d456ce009"
     },
     "doc/Using-the-CGMissingDataR-Shiny-App.html": {
-      "checksum": "b938aa67a4ba723c7f57ad085859fa24"
+      "checksum": "6ef2f9678f379a4e7ef30c8a61de0c8b"
     },
     "doc/Using-the-CGMissingDataR-Shiny-App.R": {
       "checksum": "1175468147da8ccfd206d972cb67e5e3"
     },
     "doc/Using-the-CGMissingDataR-Shiny-App.Rmd": {
-      "checksum": "d813757d5a09694290021182ded7e033"
+      "checksum": "fb4dfc8abf1a7a4f5b86b77c933e2bed"
     },
     "docs/404.html": {
-      "checksum": "4ec2b5b12c3f3ce73aa7c3aba28ab68d"
+      "checksum": "cc17cde05ae53a9bd801864eb418644b"
     },
     "docs/404.md": {
       "checksum": "1e66acd56c510518f4f5bd64aef8f5cc"
     },
     "docs/articles/How-To-Use-CGMissingDataR.html": {
-      "checksum": "4e4834e6e35e3462c3615ccebfc7712c"
+      "checksum": "53628d2a97a7c39d7ecb225c78231260"
     },
     "docs/articles/How-To-Use-CGMissingDataR.md": {
-      "checksum": "5039f7b600085a193b244dd05b98b74c"
+      "checksum": "197d0b1cbbed45218703a3f3de58219b"
     },
     "docs/articles/index.html": {
-      "checksum": "19b4daf4bcbaad5510b69ac2b2f51b44"
+      "checksum": "9e04e14f169416d609e1dfbd99582670"
     },
     "docs/articles/index.md": {
-      "checksum": "990742d43bcf2fb0913c0da0f7485299"
+      "checksum": "99c7f8b19c1bdba236ced1e972277419"
     },
     "docs/articles/Using-the-CGMissingDataR-Shiny-App.html": {
-      "checksum": "e0203a050fd33b359df24a6a277d68dc"
+      "checksum": "8560c27d0ef6438f53431e58a5123732"
     },
     "docs/articles/Using-the-CGMissingDataR-Shiny-App.md": {
-      "checksum": "c5b8df6e16ff872e40d7a052737828bb"
+      "checksum": "0cbce22478f72e200b2a29673a8220e6"
     },
     "docs/authors.html": {
-      "checksum": "79c81c0ea388345e5b88542124b5f218"
+      "checksum": "c6ae004b9c7be7418872cc70d34d5d2d"
     },
     "docs/authors.md": {
-      "checksum": "72a1c19def5f173ad9c269cae5a4e948"
+      "checksum": "9f8a643f63396cf72a9aa24553828376"
     },
     "docs/deps/bootstrap-5.3.1/bootstrap.bundle.min.js": {
       "checksum": "e2b09c06f0e714b6144a6788a28e3950"
@@ -4541,16 +4532,16 @@
       "checksum": "d0c5399929d81f67cd6d7687880498a6"
     },
     "docs/dev/articles/How-To-Use-CGMissingDataR.html": {
-      "checksum": "dfe73fdc41ac237a9c0066eaa8a4d46c"
+      "checksum": "9be391f4342f2ffd064b5a4a5f5e2e41"
     },
     "docs/dev/articles/How-To-Use-CGMissingDataR.md": {
-      "checksum": "b6f5dfe81769a9bca5f1fca5d6250011"
+      "checksum": "45e498b1a16e1fcefdade66ef96acc07"
     },
     "docs/dev/articles/index.html": {
-      "checksum": "1a9ecf1756c5bee9976aaaf2694fe1fe"
+      "checksum": "7e26ed13ace5de89e2e652453b4f3bcc"
     },
     "docs/dev/articles/index.md": {
-      "checksum": "125502e600789053698a41bbae4aefec"
+      "checksum": "07a634ce12d206bb56b84846ea1332dd"
     },
     "docs/dev/articles/Using-the-CGMissingDataR-Shiny-App.html": {
       "checksum": "aaebcc7b0484f27529baf8cb0ab41fde"
@@ -4559,10 +4550,10 @@
       "checksum": "6c6729b2f5048b5311effb2e6c84a571"
     },
     "docs/dev/authors.html": {
-      "checksum": "34d82098a29adab40cd9ccb5c4c5e8f0"
+      "checksum": "0e3992bd24a3b2b8a04bb0857d173c55"
     },
     "docs/dev/authors.md": {
-      "checksum": "daf7920b020b8652d50fbd9f39c5c57b"
+      "checksum": "f4610718a2450f5e340072e02de509b9"
     },
     "docs/dev/deps/bootstrap-5.3.1/bootstrap.bundle.min.js": {
       "checksum": "e2b09c06f0e714b6144a6788a28e3950"
@@ -4643,16 +4634,16 @@
       "checksum": "d0c5399929d81f67cd6d7687880498a6"
     },
     "docs/dev/index.html": {
-      "checksum": "e0d69f7a36dc437e47eb4e9f27f7587c"
+      "checksum": "254ef9ee2dfd2c4e950cb4167b072c64"
     },
     "docs/dev/index.md": {
-      "checksum": "4709548183648131469b96118eeb1772"
+      "checksum": "61aaa3ecabe9f64c4925ede7d258dede"
     },
     "docs/dev/katex-auto.js": {
       "checksum": "b890f6fad8eb9ce3a32eea2239934274"
     },
     "docs/dev/LICENSE.html": {
-      "checksum": "ef68d020cc27a4930d4f83a40f276df6"
+      "checksum": "f8ee6c8cb3193b6f8b6da1869ac181ab"
     },
     "docs/dev/LICENSE.md": {
       "checksum": "34bd8abef5fe3f471c1d10ccbf2aed6f"
@@ -4664,28 +4655,28 @@
       "checksum": "4759f31f8a585e9af173fc579d730265"
     },
     "docs/dev/llms.txt": {
-      "checksum": "5f00164c333bf225bb45343164b7c944"
+      "checksum": "0ee5624b3cfacb4f8f9122b94c7afcc6"
     },
     "docs/dev/news/index.html": {
-      "checksum": "5e9c83ada1131321a680046515e6c0c1"
+      "checksum": "4dfe56787254cd95958cce416d3a6b6e"
     },
     "docs/dev/news/index.md": {
-      "checksum": "0c3b86e05f6bc36151e7d5ff66fc2f92"
+      "checksum": "5505e904f98a87198accb67121e7c4bb"
     },
     "docs/dev/pkgdown.js": {
       "checksum": "1c9c0d6bf54c521a9993e0b2d23c5d08"
     },
     "docs/dev/pkgdown.yml": {
-      "checksum": "75c4298d72eddf15d11f04e77467d6bb"
+      "checksum": "da0feec43f8da678e8cf1d5140330e5c"
     },
     "docs/dev/reference/CGMExampleData.html": {
-      "checksum": "7debb5535c6272bc63237538e1f8b28e"
+      "checksum": "86f631afb3449ba252d40a8675d897e1"
     },
     "docs/dev/reference/CGMExampleData.md": {
       "checksum": "7b86bdd15beb09a3034a365eee88e463"
     },
     "docs/dev/reference/CGMExampleData2.html": {
-      "checksum": "791dde444795d3f81690c563dedf9d6d"
+      "checksum": "a6f0349bd13eba42b379c48de71cb90d"
     },
     "docs/dev/reference/CGMExampleData2.md": {
       "checksum": "f5509871be043bfc9713ca68d9c43b81"
@@ -4703,19 +4694,19 @@
       "checksum": "3cd4e70bd7f3a613b83b5affbaae0b3d"
     },
     "docs/dev/reference/CGMissingDataR-package.html": {
-      "checksum": "18538aa804ac8f77840716be7a466cc3"
+      "checksum": "341ad5b08fcc3c7000b95344d8a05bd4"
     },
     "docs/dev/reference/CGMissingDataR-package.md": {
-      "checksum": "e848e8a80d4a9169c0377202fa7387fe"
+      "checksum": "9fc11dfcb4f8e04421d5a2e6a9350ded"
     },
     "docs/dev/reference/CGMissingDataR.html": {
-      "checksum": "bc42c9bbcc30ffa9c271536f2b8175ce"
+      "checksum": "9f80a94a26ee3abda3d341e2ec14db12"
     },
     "docs/dev/reference/index.html": {
-      "checksum": "a4070c7fdb36ad9179cd9e95c8b4a36e"
+      "checksum": "f1e15630374b2c9a143d73812d26a941"
     },
     "docs/dev/reference/index.md": {
-      "checksum": "86693a4abb1b26f2b14c679407161ecc"
+      "checksum": "7178c4e0cb8846f283bbe58dc266b5c8"
     },
     "docs/dev/reference/run_app.html": {
       "checksum": "de745faccc04af9520f5366d6ef44147"
@@ -4724,40 +4715,40 @@
       "checksum": "2c158b16a5c8aec9a2f7b2d108618631"
     },
     "docs/dev/reference/run_comprehensive_imputation_benchmark.html": {
-      "checksum": "0fc058bbff7c3ff9078bf4bd8977951c"
+      "checksum": "c24e76f3f9bc41f97e1de898fc2991dd"
     },
     "docs/dev/reference/run_comprehensive_imputation_benchmark.md": {
       "checksum": "bdc0851688f54cab5704ecaa6d4c96f8"
     },
     "docs/dev/reference/run_missing_glucose_imputation.html": {
-      "checksum": "ccc3071bee8d51a6c9d4a11a59b2384d"
+      "checksum": "091a8efa56d6e1e215c41deb4c216906"
     },
     "docs/dev/reference/run_missing_glucose_imputation.md": {
       "checksum": "26da89debe4ca02a3c37a35ead8f5530"
     },
     "docs/dev/reference/run_missingness_benchmark.html": {
-      "checksum": "8728411e21ae3f6f783f629060f0fc09"
+      "checksum": "c042d984d97c685a9bf34a354d5fdd77"
     },
     "docs/dev/reference/run_missingness_benchmark.md": {
-      "checksum": "e8f4ee8c6720a124b7b15d57447ec877"
+      "checksum": "0b0620a87c619b944369c1920235167c"
     },
     "docs/dev/search.json": {
-      "checksum": "e2ffda6d6642c9146b97021b835e9e54"
+      "checksum": "722b3abda078c9441957839a402689b4"
     },
     "docs/dev/sitemap.xml": {
-      "checksum": "b6c85a2db75eeb51fb14cf067d29c40b"
+      "checksum": "ee10e103e3360e45d9ed71c544b29755"
     },
     "docs/index.html": {
-      "checksum": "62cfb9ec522cf19ba21ffbbafe7d4f85"
+      "checksum": "6eafb9d113ff3281041d7cac8be8fffe"
     },
     "docs/index.md": {
-      "checksum": "783cb0f855a09ed07b652c87c8d93f13"
+      "checksum": "c3206ce9ffa77856a5a1555485a4377b"
     },
     "docs/katex-auto.js": {
       "checksum": "b890f6fad8eb9ce3a32eea2239934274"
     },
     "docs/LICENSE.html": {
-      "checksum": "01c8fe793f119e613b91cde997536334"
+      "checksum": "33c2cf07bb2c95ce181d3a76f2575f0f"
     },
     "docs/LICENSE.md": {
       "checksum": "34bd8abef5fe3f471c1d10ccbf2aed6f"
@@ -4769,100 +4760,100 @@
       "checksum": "4759f31f8a585e9af173fc579d730265"
     },
     "docs/llms.txt": {
-      "checksum": "b9952b43aea4c2223569eb43ee1145ed"
+      "checksum": "28449abfe4aecab253baae89060dd9f4"
     },
     "docs/news/index.html": {
-      "checksum": "cf9d5aa4626bb37c1a810544f6f92f22"
+      "checksum": "c49d4f324c5366e6aeece284bd739002"
     },
     "docs/news/index.md": {
-      "checksum": "f685da434b09eb2a9ab82826ecbc5331"
+      "checksum": "b2dd3ffb234b93424dee6b7e01579e9a"
     },
     "docs/pkgdown.js": {
       "checksum": "1c9c0d6bf54c521a9993e0b2d23c5d08"
     },
     "docs/pkgdown.yml": {
-      "checksum": "94d4b69e16933e95cbf7b699ddc0c0ec"
+      "checksum": "6ff0fe886339224000782f687a44bb52"
     },
     "docs/reference/CGMExampleData.html": {
-      "checksum": "fd0be17fe753cbfa30727df404240c18"
+      "checksum": "18361689829d4e9a5d2f094afaad1e9e"
     },
     "docs/reference/CGMExampleData.md": {
-      "checksum": "1a18c8f22395d1eb3e30eacd43409c9a"
+      "checksum": "eb8a3a8f7c773746cd7c2d6debadc667"
     },
     "docs/reference/CGMExmplDat10Pct.html": {
-      "checksum": "e50bf924bc600db7dbda66e4fbe15797"
+      "checksum": "8cdb81dd3ab7734c50f98ffb0c5e5ce3"
     },
     "docs/reference/CGMExmplDat10Pct.md": {
-      "checksum": "3b5fc920b8e6792292d09f78cae2ddce"
+      "checksum": "e9cb4b84aebb3f02410c650b47a96d2b"
     },
     "docs/reference/CGMExmplDat5Pct.html": {
-      "checksum": "0b94798bebd60cb45b079b661f24cea5"
+      "checksum": "13fdc631e41e909a7a06c0b539a1a220"
     },
     "docs/reference/CGMExmplDat5Pct.md": {
-      "checksum": "3cd4e70bd7f3a613b83b5affbaae0b3d"
+      "checksum": "9292cb79787e2ac8ee2ac6208b6cd59a"
     },
     "docs/reference/CGMissingDataR-package.html": {
-      "checksum": "2c675b14d4a1faa5512ec69104da6f90"
+      "checksum": "9db519deafe0af4da34a6488b57b21f7"
     },
     "docs/reference/CGMissingDataR-package.md": {
-      "checksum": "e848e8a80d4a9169c0377202fa7387fe"
+      "checksum": "ada9f5a05469c35aec1da4a7a9fd7f1d"
     },
     "docs/reference/CGMissingDataR.html": {
-      "checksum": "50c2006e56341e9509e32c56e70f86b7"
+      "checksum": "cc72e775f1e5aef8384ff0fb118a1279"
     },
     "docs/reference/index.html": {
-      "checksum": "d0b14c5233fd2179a1c4a5fcd78be9f8"
+      "checksum": "13854bdb1e5699397a087f56a8b9f3ea"
     },
     "docs/reference/index.md": {
-      "checksum": "1dd347656d0ee1b4a099002dc872a4d2"
+      "checksum": "775adabed66a0a9895118c0c06d04f82"
     },
     "docs/reference/run_app.html": {
-      "checksum": "f3a356ee71063720532050648869d860"
+      "checksum": "f9c2ba61040c773f210f2531a1f962d9"
     },
     "docs/reference/run_app.md": {
-      "checksum": "bd4c44cf7dc5ba03447d8d876a739f6e"
+      "checksum": "72c483476f57fc3408de11c1467ff3ce"
     },
     "docs/reference/run_missing_glucose_imputation.html": {
-      "checksum": "681833ac4f25bd06faa29db7a5a9aeb0"
+      "checksum": "5a84659d817d0698d3407c412daf94f9"
     },
     "docs/reference/run_missing_glucose_imputation.md": {
-      "checksum": "42715a17faea1b100c2bff8aa9167730"
+      "checksum": "6f1f1597120525587330c7befa8a33a9"
     },
     "docs/reference/run_missingness_benchmark.html": {
-      "checksum": "0115632108811e9ae6f326f6337c08e6"
+      "checksum": "234cf5069068e195b61a93ad01e9d820"
     },
     "docs/reference/run_missingness_benchmark.md": {
-      "checksum": "d8fd40f6fe8b4d7ecbe6024157f52cbc"
+      "checksum": "a50af12a076341d88dd99a42476d71bf"
     },
     "docs/search.json": {
-      "checksum": "66ed91cac38dd3023a6453f98db9da06"
+      "checksum": "10fc09b82e39f4a356e4a74bab38875e"
     },
     "docs/sitemap.xml": {
-      "checksum": "853c1f2c4fe03a761f2a6c53d0385bf5"
+      "checksum": "1e1ec0dd6900ddf58c171f149be09264"
     },
     "inst/shiny/cgm_imputation_app/app.R": {
-      "checksum": "e577a98ae4dd84cff4cffa1b44783923"
+      "checksum": "83ed3e67bb0da503c91b86ec742531e2"
     },
     "inst/WORDLIST": {
-      "checksum": "699580c6e8578c68a246d1a396a7b30b"
+      "checksum": "31075953fd9ce0571645c7bed2a0047c"
     },
     "LICENSE.md": {
       "checksum": "3d82780e8917b360cbee7b9ec3e40734"
     },
     "man/CGMExmplDat10Pct.Rd": {
-      "checksum": "36b9eec87b92baa435b53b2312e7cc8e"
+      "checksum": "94a71d93f745230b2d1e10d46bbdeebc"
     },
     "man/CGMExmplDat5Pct.Rd": {
-      "checksum": "33784d109abffbae60891577c8f66960"
+      "checksum": "2230ebec23fb6372fe3b62185023b9c9"
     },
     "man/CGMissingDataR-package.Rd": {
-      "checksum": "2ef9edabf14d3d690d8ba7c5e9fc0a10"
+      "checksum": "7ac1bd17e61dd724849e58b79359b51a"
     },
     "man/run_app.Rd": {
-      "checksum": "b2acfbf83fb98d5ea7d339daf8ad8c74"
+      "checksum": "6621db863a66fafd92f2b9a81930135d"
     },
     "man/run_missing_glucose_imputation.Rd": {
-      "checksum": "da70edcad6e0e8b0e9403a92131cc6cd"
+      "checksum": "31a7e1da6db5d24f7f88faabe1087422"
     },
     "man/run_missingness_benchmark.Rd": {
       "checksum": "92b638d1f091bf54cc1d9aecfc948dca"
@@ -4874,46 +4865,46 @@
       "checksum": "4db07b5cd89a36d9137c5426fb8b8f2b"
     },
     "NEWS.md": {
-      "checksum": "6570ceec8667d15ca83decae39acefe8"
+      "checksum": "4a8ab50c1db8041367b8d76c25466829"
     },
     "R/CGMissingDataR-package.R": {
-      "checksum": "13211d3541225eea8fab6b102de246ae"
+      "checksum": "e64e038853ac5e6e4652d11ce90645e2"
     },
     "R/data.R": {
-      "checksum": "8302203e1cefbdd41c880f6aa2fbae0a"
+      "checksum": "a2c4a289a58109e8768057800c9eac7d"
     },
     "R/global.R": {
       "checksum": "846978c089c39a0667fcd899eb964ac1"
     },
     "R/imputation.R": {
-      "checksum": "25d4a849d9d1e29f999952657fac3f7c"
+      "checksum": "b94b2eabd836464abd94ee0af5d2670c"
     },
     "R/run_app.R": {
-      "checksum": "cdde1ebddbdcf4230e9bc9606ecae920"
+      "checksum": "4870c8b966b119a94755c47e99c73412"
     },
     "R/run_bench.R": {
       "checksum": "cc98dc05abf8e744da4f36988e9bd2e3"
     },
     "README.md": {
-      "checksum": "94514508174f1743ab143e29364d7b38"
+      "checksum": "39a2876caac849ed0e18b619ec319988"
     },
     "README.Rmd": {
-      "checksum": "c2cd56eec5974f66c068cbba37a03afd"
+      "checksum": "72ff52f39997147319c15380388efb25"
     },
     "requirements.txt": {
-      "checksum": "c6ab0ea1fac205524f3d549a5013bce2"
+      "checksum": "4c528a4284270095992b059f3c07978b"
     },
     "tests/testthat.R": {
       "checksum": "d55fc560d93b7f62b6e615e7edf91f54"
     },
     "tests/testthat/test-runner.R": {
-      "checksum": "87a829bfa99f17574fac8e1163f30475"
+      "checksum": "e8a8e9ad737275f8863d06d6386bc8f4"
     },
     "vignettes/How-To-Use-CGMissingDataR.Rmd": {
-      "checksum": "f4687da1862ac43d450559489d71b9b9"
+      "checksum": "fbd5786f53b73af06ae94f3144ea7b93"
     },
     "vignettes/Using-the-CGMissingDataR-Shiny-App.Rmd": {
-      "checksum": "d813757d5a09694290021182ded7e033"
+      "checksum": "ba74bd302839ad39f753f1f640977d8e"
     }
   },
   "users": null

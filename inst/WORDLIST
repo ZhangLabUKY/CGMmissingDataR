@@ -1,9 +1,8 @@
 Azur
 Breiman
 CGM
-CGManalyzer
-CGMmissingDataR
 CGMissingData
+CGMmissingDataR
 CMD
 Changelog
 Guestrin
@@ -37,13 +36,16 @@ et
 imputer
 jss
 kNN
+lightgbm
 mpr
 parseable
+pre
 recoded
 reticulate
 rollmean
 scikit
 segmentwise
+selectable
 sklearn
 statsmodels
 walkthrough

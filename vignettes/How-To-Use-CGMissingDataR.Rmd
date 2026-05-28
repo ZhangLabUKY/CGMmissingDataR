@@ -324,9 +324,10 @@ In that mode, the function sends the input data frame to Python through
 `reticulate`. Python then performs preprocessing and imputation with:
 
 - `pandas` for data-frame operations;
-- `scikit-learn` for `IterativeImputer`;
+- `scikit-learn` for `IterativeImputer`, Random Forest, and kNN;
 - `statsmodels` for ARIMA;
-- Python `xgboost` for XGBoost regression.
+- Python `xgboost` for XGBoost regression;
+- Python `lightgbm` when forcing LightGBM.
 
 The completed pandas data frame is then converted back to R.
 
@@ -348,6 +349,9 @@ reticulate::py_require(c(
   "statsmodels",
   "xgboost"
 ))
+
+# Optional, only needed for models = "lightgbm"
+reticulate::py_install("lightgbm", pip = TRUE)
 ```
 
 Then call the function with `imputer_backend = "sklearn"`:
@@ -440,7 +444,16 @@ If the Python backend reports a missing module such as `sklearn`, remember that
 the package is installed as `scikit-learn` but imported as `sklearn`.
 
 ```r
-reticulate::py_require(c("scikit-learn", "pandas", "statsmodels", "xgboost"))
+reticulate::py_require(c(
+  "numpy",
+  "pandas",
+  "scikit-learn",
+  "statsmodels",
+  "xgboost"
+))
+
+# Optional, only needed for models = "lightgbm"
+reticulate::py_install("lightgbm", pip = TRUE)
 ```
 
 If Python was already initialized before declaring requirements, restart R and

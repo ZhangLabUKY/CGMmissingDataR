@@ -24,8 +24,7 @@ options(shiny.maxRequestSize = 1024^3)
   rf_n_estimators,
   knn_k,
   lgb_nrounds,
-  seed,
-  prefer_cgmanalyzer_equal_interval
+  seed
 ) {
   list(
     data = data,
@@ -41,9 +40,6 @@ options(shiny.maxRequestSize = 1024^3)
     knn_k = knn_k,
     lgb_nrounds = lgb_nrounds,
     seed = seed,
-    prefer_cgmanalyzer_equal_interval = isTRUE(
-      prefer_cgmanalyzer_equal_interval
-    ),
     export = FALSE
   )
 }
@@ -163,12 +159,6 @@ ui <- fluidPage(
         value = 42,
         min = 1,
         step = 1
-      ),
-
-      checkboxInput(
-        inputId = "prefer_cgmanalyzer_equal_interval",
-        label = "Use CGManalyzer equal-interval handling when available",
-        value = FALSE
       ),
 
       tags$hr(),
@@ -475,10 +465,7 @@ server <- function(input, output, session) {
             rf_n_estimators = input$rf_n_estimators,
             knn_k = input$knn_k,
             lgb_nrounds = input$lgb_nrounds,
-            seed = input$seed,
-            prefer_cgmanalyzer_equal_interval = isTRUE(
-              input$prefer_cgmanalyzer_equal_interval
-            )
+            seed = input$seed
           )
           out <- do.call(run_missing_glucose_imputation, call_args)
 

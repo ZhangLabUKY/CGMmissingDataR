@@ -68,8 +68,7 @@ expect_strict_imputation_output <- function(
       models = models,
       xgb_nrounds = 5,
       rf_n_estimators = 25,
-      lgb_nrounds = 25,
-      prefer_cgmanalyzer_equal_interval = FALSE
+      lgb_nrounds = 25
     )
   )
 }
@@ -79,16 +78,14 @@ expect_strict_imputation_output <- function(
     warning = function(w) {
       msg <- conditionMessage(w)
 
-      if (
-        grepl("^Number of logged events:", msg) ||
-          grepl("already had equal intervals", msg)
-      ) {
+      if (grepl("^Number of logged events:", msg)) {
         invokeRestart("muffleWarning")
       }
     }
   )
 }
 test_that("real missing glucose imputation returns strict-port data frame", {
+  skip_on_cran()
   skip_if_not_installed("mice")
   skip_if_not_installed("data.table")
 
@@ -102,8 +99,7 @@ test_that("real missing glucose imputation returns strict-port data frame", {
       id_col = "USUBJID",
       time_col = "Time",
       imputer_backend = "mice",
-      xgb_nrounds = 5,
-      prefer_cgmanalyzer_equal_interval = FALSE
+      xgb_nrounds = 5
     )
   )
 
@@ -119,6 +115,7 @@ test_that("real missing glucose imputation returns strict-port data frame", {
 })
 
 test_that("models = NULL works like automatic method selection", {
+  skip_on_cran()
   skip_if_not_installed("mice")
   skip_if_not_installed("data.table")
 
@@ -133,8 +130,7 @@ test_that("models = NULL works like automatic method selection", {
       time_col = "Time",
       imputer_backend = "mice",
       models = NULL,
-      xgb_nrounds = 5,
-      prefer_cgmanalyzer_equal_interval = FALSE
+      xgb_nrounds = 5
     )
   )
   expect_strict_imputation_output(
@@ -188,6 +184,7 @@ test_that("invalid real-imputation model selections error clearly", {
 })
 
 test_that("R backend supports forced real-imputation methods", {
+  skip_on_cran()
   skip_if_not_installed("mice")
   skip_if_not_installed("data.table")
 
@@ -414,8 +411,7 @@ test_that("Shiny app exposes and maps selectable imputation methods", {
       rf_n_estimators = 25,
       knn_k = 3,
       lgb_nrounds = 25,
-      seed = 42,
-      prefer_cgmanalyzer_equal_interval = FALSE
+      seed = 42
     )
 
     expect_identical(args$models, model)
