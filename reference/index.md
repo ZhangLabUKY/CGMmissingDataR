@@ -3,7 +3,7 @@
 ## Current Imputation Workflows
 
 - [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md)
-  : Impute missing glucose values using Mice and ARIMA/XGBoost
+  : Impute missing glucose values using selectable MICE-based methods
 - [`run_app()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_app.md)
   : Launch the CGMmissingDataR Shiny App
 

@@ -81,6 +81,9 @@ reticulate::py_require(c(
   "statsmodels",
   "xgboost"
 ))
+
+# Optional, only needed for models = "lightgbm"
+reticulate::py_install("lightgbm", pip = TRUE)
 ```
 
 ## Basic use

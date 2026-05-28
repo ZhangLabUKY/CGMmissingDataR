@@ -1,4 +1,4 @@
-# Impute missing glucose values using Mice and ARIMA/XGBoost
+# Impute missing glucose values using selectable MICE-based methods
 
 Imputes missing glucose values in continuous glucose monitoring (CGM)
 data. The function handles both explicit missing glucose values already
@@ -6,7 +6,7 @@ coded as `NA` and implicit missing readings caused by timestamp gaps.
 Before imputation, each subject is regularized to an equal
 `interval_minutes` timestamp grid; missing timestamp gaps are converted
 into explicit rows with `target_col = NA`, then imputed using the
-selected backend.
+selected backend and final imputation method.
 
 ## Usage
 
@@ -36,7 +36,6 @@ run_missing_glucose_imputation(
   use_arima_if_missing_leq = 0.05,
   arima_min_history = 20L,
   imputer_backend = c("mice", "sklearn"),
-  prefer_cgmanalyzer_equal_interval = FALSE,
   export = FALSE
 )
 ```
@@ -84,29 +83,30 @@ run_missing_glucose_imputation(
 
 - models:
 
-  Real-imputation method selector. Use `NULL` or `"auto"` to keep the
-  default missing-rate rule: `MICE+ARIMA` when the target missing rate
-  is less than or equal to `use_arima_if_missing_leq`, otherwise
-  `MICE+XGBoost`. Use one of `"arima"`, `"xgboost"`, `"rf"`, `"knn"`, or
-  `"lightgbm"` to force a specific method regardless of missing rate.
+  Final real-imputation method selector. Use `NULL` or `"auto"` to keep
+  the default missing-rate rule: `MICE+ARIMA` when the target missing
+  rate is less than or equal to `use_arima_if_missing_leq`, otherwise
+  `MICE+XGBoost`. Use exactly one of `"arima"`, `"xgboost"`, `"rf"`,
+  `"knn"`, or `"lightgbm"` to force a specific method regardless of
+  missing rate.
 
 - rf_n_estimators:
 
-  Integer: number of Random Forest trees. Only used when
-  `models = "rf"`.
+  Integer number of Random Forest trees. Used when `models = "rf"`.
 
 - knn_k:
 
-  Integer: number of nearest neighbors. Only used when `models = "knn"`.
+  Integer number of nearest neighbors. Used when `models = "knn"`.
 
 - xgb_nrounds:
 
-  Integer: number of XGBoost boosting rounds. Python's `n_estimators`
-  default is 300.
+  Integer number of XGBoost boosting rounds. Used when
+  `models = "xgboost"` and may be used by `models = "auto"` when the
+  missing-rate rule selects XGBoost.
 
 - lgb_nrounds:
 
-  Integer: number of LightGBM boosting rounds. Only used when
+  Integer number of LightGBM boosting rounds. Used when
   `models = "lightgbm"`.
 
 - arima_order:
@@ -115,7 +115,8 @@ run_missing_glucose_imputation(
 
 - seed:
 
-  Integer seed for scikit-learn and XGBoost. Python default is 42.
+  Integer seed for reproducible MICE, tree-based models, and the
+  Python-compatible backend. Default is 42.
 
 - lag_k:
 
@@ -157,9 +158,10 @@ run_missing_glucose_imputation(
 
 - use_arima_if_missing_leq:
 
-  Numeric missing-rate threshold. If the target missing rate is less
-  than or equal to this value, segmentwise ARIMA is used; otherwise
-  XGBoost is used. Python default is 0.05.
+  Numeric missing-rate threshold used only when `models` is `NULL` or
+  `"auto"`. If the target missing rate is less than or equal to this
+  value, segmentwise ARIMA is used; otherwise XGBoost is used. Default
+  is 0.05.
 
 - arima_min_history:
 
@@ -169,15 +171,8 @@ run_missing_glucose_imputation(
 - imputer_backend:
 
   One of `"mice"` or `"sklearn"`. `"mice"` uses the R package `mice` as
-  the CRAN-safe R-native fallback. `"sklearn"` uses Python modules
-  through `reticulate` for the full strict workflow and gives the
-  closest agreement with the Python package.
-
-- prefer_cgmanalyzer_equal_interval:
-
-  Retained for compatibility. The Python-engine path uses pandas
-  elapsed-minute construction unless an existing non-empty `TimeSeries`
-  column is supplied.
+  the CRAN-safe R-native backend. `"sklearn"` uses Python modules
+  through `reticulate` for a Python-compatible workflow.
 
 - export:
 
@@ -200,10 +195,16 @@ subject. Each subject is regularized to an equal `interval_minutes`
 grid. If a reading is missing because the timestamp is absent from the
 input data, a new row is inserted and the target glucose value is set to
 `NA`. These inserted missing values are then imputed using the same
-workflow as explicit `NA` values.
+workflow as explicit `NA` values. The deterministic interval grid is
+controlled by this package; `CGManalyzer`'s equal-interval helper is
+called internally for workflow consistency.
 
 Internally, the function creates time features, lag features, and
-rolling-mean features to support imputation. These engineered columns
+rolling-mean features to support imputation. MICE first completes the
+target and feature matrix. The selected final method then fills the
+missing glucose positions in `imputed_glucose_value`: either by
+segmentwise ARIMA or by a supervised model trained on observed glucose
+values and the MICE-completed feature matrix. These engineered columns
 are used only during model fitting and are removed from the returned
 data frame.
 
@@ -231,11 +232,6 @@ out <- run_missing_glucose_imputation(
   time_col = "Time",
   imputer_backend = "mice"
 )
-#> Warning: The data have already had equal intervals between any two consecutive points. No adjustment!
-#> Warning: The data have already had equal intervals between any two consecutive points. No adjustment!
-#> Warning: The data have already had equal intervals between any two consecutive points. No adjustment!
-#> Warning: The data have already had equal intervals between any two consecutive points. No adjustment!
-#> Warning: The data have already had equal intervals between any two consecutive points. No adjustment!
 #> Warning: Number of logged events: 37
 head(subset(out, is.na(LBORRES)))
 #>    USUBJID SEX LBORRES                Time AGE hba1c imputed_glucose_value

@@ -81,6 +81,9 @@ reticulate::py_require(c(
   "statsmodels",
   "xgboost"
 ))
+
+# Optional, only needed for models = "lightgbm"
+reticulate::py_install("lightgbm", pip = TRUE)
 ```
 
 ## Basic use
@@ -234,7 +237,7 @@ The changelog is available at:
 ## Current Imputation Workflows
 
 - [`run_missing_glucose_imputation()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_missing_glucose_imputation.md)
-  : Impute missing glucose values using Mice and ARIMA/XGBoost
+  : Impute missing glucose values using selectable MICE-based methods
 - [`run_app()`](https://zhanglabuky.github.io/CGMmissingDataR/reference/run_app.md)
   : Launch the CGMmissingDataR Shiny App
 

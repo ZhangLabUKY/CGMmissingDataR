@@ -534,10 +534,12 @@ imputation with:</p>
 <li>
 <code>pandas</code> for data-frame operations;</li>
 <li>
-<code>scikit-learn</code> for <code>IterativeImputer</code>;</li>
+<code>scikit-learn</code> for <code>IterativeImputer</code>, Random
+Forest, and kNN;</li>
 <li>
 <code>statsmodels</code> for ARIMA;</li>
-<li>Python <code>xgboost</code> for XGBoost regression.</li>
+<li>Python <code>xgboost</code> for XGBoost regression;</li>
+<li>Python <code>lightgbm</code> when forcing LightGBM.</li>
 </ul>
 <p>The completed pandas data frame is then converted back to R.</p>
 <div class="section level3">
@@ -555,7 +557,10 @@ backend:</p>
 <span>  <span class="st">"scikit-learn"</span>,</span>
 <span>  <span class="st">"statsmodels"</span>,</span>
 <span>  <span class="st">"xgboost"</span></span>
-<span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Optional, only needed for models = "lightgbm"</span></span>
+<span><span class="fu">reticulate</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/reticulate/reference/py_install.html" class="external-link">py_install</a></span><span class="op">(</span><span class="st">"lightgbm"</span>, pip <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>Then call the function with
 <code>imputer_backend = "sklearn"</code>:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
@@ -660,7 +665,16 @@ minutes, or mixed timestamp formats.</p>
 <code>sklearn</code>, remember that the package is installed as
 <code>scikit-learn</code> but imported as <code>sklearn</code>.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">reticulate</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/reticulate/reference/py_require.html" class="external-link">py_require</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"scikit-learn"</span>, <span class="st">"pandas"</span>, <span class="st">"statsmodels"</span>, <span class="st">"xgboost"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">reticulate</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/reticulate/reference/py_require.html" class="external-link">py_require</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"numpy"</span>,</span>
+<span>  <span class="st">"pandas"</span>,</span>
+<span>  <span class="st">"scikit-learn"</span>,</span>
+<span>  <span class="st">"statsmodels"</span>,</span>
+<span>  <span class="st">"xgboost"</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Optional, only needed for models = "lightgbm"</span></span>
+<span><span class="fu">reticulate</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/reticulate/reference/py_install.html" class="external-link">py_install</a></span><span class="op">(</span><span class="st">"lightgbm"</span>, pip <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>If Python was already initialized before declaring requirements,
 restart R and run the call again.</p>
 </div>
