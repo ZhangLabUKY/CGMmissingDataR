@@ -4364,7 +4364,7 @@
       "checksum": "5b617f468c5ae8086e3a0f5f64892c05"
     },
     ".Rbuildignore": {
-      "checksum": "2f508d56607991cad5f38e8009fda8d2"
+      "checksum": "c8e54bec403dbaeaa00648bc29b315eb"
     },
     "_pkgdown.yml": {
       "checksum": "b1a08d004ae962f321d14170de9f6047"
@@ -4376,7 +4376,10 @@
       "checksum": "ac93983e24ad9b1ebe710d265f7f00ee"
     },
     "cran-comments.md": {
-      "checksum": "c57a44a99d178a773650b5c6182b8f80"
+      "checksum": "19c0ec03ee9418d5ac8e59786d590f93"
+    },
+    "CRAN-SUBMISSION": {
+      "checksum": "07d5cc7608a63fda1d853f3bb688713a"
     },
     "data-raw/CGMCompleteExampleData.csv": {
       "checksum": "6ade3e0b4fd2958c3f326eee88f2d83f"
@@ -4405,6 +4408,9 @@
     "DESCRIPTION": {
       "checksum": "3059aa416cb120eb450f5f241563759f"
     },
+    "dev_notes/cran-threading.md": {
+      "checksum": "0e04c679888ff0f0bd8036225706f75b"
+    },
     "doc/How-To-Use-CGMissingDataR.html": {
       "checksum": "42def99e38c8216eac3a6a3f734cac09"
     },
@@ -4430,10 +4436,10 @@
       "checksum": "1e66acd56c510518f4f5bd64aef8f5cc"
     },
     "docs/articles/How-To-Use-CGMissingDataR.html": {
-      "checksum": "53628d2a97a7c39d7ecb225c78231260"
+      "checksum": "3f53b9d30131deafe87b07a78951b4b5"
     },
     "docs/articles/How-To-Use-CGMissingDataR.md": {
-      "checksum": "197d0b1cbbed45218703a3f3de58219b"
+      "checksum": "e32b5510c3c29892e1521c248400e12d"
     },
     "docs/articles/index.html": {
       "checksum": "9e04e14f169416d609e1dfbd99582670"
@@ -4739,10 +4745,10 @@
       "checksum": "ee10e103e3360e45d9ed71c544b29755"
     },
     "docs/index.html": {
-      "checksum": "6eafb9d113ff3281041d7cac8be8fffe"
+      "checksum": "54c97a88e5dbf781eda9d05d5be4a808"
     },
     "docs/index.md": {
-      "checksum": "c3206ce9ffa77856a5a1555485a4377b"
+      "checksum": "e9b9fc357bbb992d4a027cb18d2759fc"
     },
     "docs/katex-auto.js": {
       "checksum": "b890f6fad8eb9ce3a32eea2239934274"
@@ -4760,19 +4766,19 @@
       "checksum": "4759f31f8a585e9af173fc579d730265"
     },
     "docs/llms.txt": {
-      "checksum": "28449abfe4aecab253baae89060dd9f4"
+      "checksum": "eaf6cdc9025f62716a17c371ffbe71b9"
     },
     "docs/news/index.html": {
       "checksum": "c49d4f324c5366e6aeece284bd739002"
     },
     "docs/news/index.md": {
-      "checksum": "b2dd3ffb234b93424dee6b7e01579e9a"
+      "checksum": "cee2c1f42fceff163109b7cb7a1c6302"
     },
     "docs/pkgdown.js": {
       "checksum": "1c9c0d6bf54c521a9993e0b2d23c5d08"
     },
     "docs/pkgdown.yml": {
-      "checksum": "6ff0fe886339224000782f687a44bb52"
+      "checksum": "64ab9f90f772a8e055343507831faefe"
     },
     "docs/reference/CGMExampleData.html": {
       "checksum": "18361689829d4e9a5d2f094afaad1e9e"
@@ -4802,10 +4808,10 @@
       "checksum": "cc72e775f1e5aef8384ff0fb118a1279"
     },
     "docs/reference/index.html": {
-      "checksum": "13854bdb1e5699397a087f56a8b9f3ea"
+      "checksum": "99d6ab22e49773ca851b190b0d925bf8"
     },
     "docs/reference/index.md": {
-      "checksum": "775adabed66a0a9895118c0c06d04f82"
+      "checksum": "23fbb8e670d10e7aee2a52cb7a6348b6"
     },
     "docs/reference/run_app.html": {
       "checksum": "f9c2ba61040c773f210f2531a1f962d9"
@@ -4814,10 +4820,10 @@
       "checksum": "72c483476f57fc3408de11c1467ff3ce"
     },
     "docs/reference/run_missing_glucose_imputation.html": {
-      "checksum": "5a84659d817d0698d3407c412daf94f9"
+      "checksum": "368100a6977f63b55c80e6d847e50381"
     },
     "docs/reference/run_missing_glucose_imputation.md": {
-      "checksum": "6f1f1597120525587330c7befa8a33a9"
+      "checksum": "093c0cb2eb34f1967c46370664cd2d61"
     },
     "docs/reference/run_missingness_benchmark.html": {
       "checksum": "234cf5069068e195b61a93ad01e9d820"
@@ -4826,13 +4832,13 @@
       "checksum": "a50af12a076341d88dd99a42476d71bf"
     },
     "docs/search.json": {
-      "checksum": "10fc09b82e39f4a356e4a74bab38875e"
+      "checksum": "5a2d5566d9084d3dd0d85ca0b639b5e3"
     },
     "docs/sitemap.xml": {
       "checksum": "1e1ec0dd6900ddf58c171f149be09264"
     },
     "inst/shiny/cgm_imputation_app/app.R": {
-      "checksum": "83ed3e67bb0da503c91b86ec742531e2"
+      "checksum": "15214fc0af7205349e9b17a113a205de"
     },
     "inst/WORDLIST": {
       "checksum": "31075953fd9ce0571645c7bed2a0047c"
@@ -4853,7 +4859,7 @@
       "checksum": "6621db863a66fafd92f2b9a81930135d"
     },
     "man/run_missing_glucose_imputation.Rd": {
-      "checksum": "31a7e1da6db5d24f7f88faabe1087422"
+      "checksum": "7910c0d384e1396724da17e92792e63a"
     },
     "man/run_missingness_benchmark.Rd": {
       "checksum": "92b638d1f091bf54cc1d9aecfc948dca"
@@ -4865,7 +4871,7 @@
       "checksum": "4db07b5cd89a36d9137c5426fb8b8f2b"
     },
     "NEWS.md": {
-      "checksum": "4a8ab50c1db8041367b8d76c25466829"
+      "checksum": "bd0c38065fd715a4dec5f7e0f229fe20"
     },
     "R/CGMissingDataR-package.R": {
       "checksum": "e64e038853ac5e6e4652d11ce90645e2"
@@ -4877,7 +4883,7 @@
       "checksum": "846978c089c39a0667fcd899eb964ac1"
     },
     "R/imputation.R": {
-      "checksum": "b94b2eabd836464abd94ee0af5d2670c"
+      "checksum": "48ae4304e17a739e8aa6d64b310394a4"
     },
     "R/run_app.R": {
       "checksum": "4870c8b966b119a94755c47e99c73412"
@@ -4886,10 +4892,10 @@
       "checksum": "cc98dc05abf8e744da4f36988e9bd2e3"
     },
     "README.md": {
-      "checksum": "39a2876caac849ed0e18b619ec319988"
+      "checksum": "0ab6496f603204f7922fe3525d5d616e"
     },
     "README.Rmd": {
-      "checksum": "72ff52f39997147319c15380388efb25"
+      "checksum": "19d11188625deed55ae3496afb10a213"
     },
     "requirements.txt": {
       "checksum": "4c528a4284270095992b059f3c07978b"
@@ -4898,13 +4904,13 @@
       "checksum": "d55fc560d93b7f62b6e615e7edf91f54"
     },
     "tests/testthat/test-runner.R": {
-      "checksum": "e8a8e9ad737275f8863d06d6386bc8f4"
+      "checksum": "a9b1f497b0aace0417f379ca4a79d91e"
     },
     "vignettes/How-To-Use-CGMissingDataR.Rmd": {
-      "checksum": "fbd5786f53b73af06ae94f3144ea7b93"
+      "checksum": "678e0d8271c83103add9242da7ff5da7"
     },
     "vignettes/Using-the-CGMissingDataR-Shiny-App.Rmd": {
-      "checksum": "ba74bd302839ad39f753f1f640977d8e"
+      "checksum": "00a626fa75fa27f003fc62bb39436a03"
     }
   },
   "users": null

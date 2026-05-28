@@ -13,7 +13,9 @@ checks](https://badges.cranchecks.info/summary/CGMissingDataR.svg)](https://cran
 [![Downloads](https://cranlogs.r-pkg.org/badges/grand-total/CGMissingDataR)](https://cran.r-project.org/package=CGMissingDataR)
 [![Last Commit
 Release](https://img.shields.io/github/last-commit/ZhangLabUKY/CGMmissingDataR/master)](https://github.com/ZhangLabUKY/CGMmissingDataR/commits/master/)
-<!-- badges: end --> \## Installation
+<!-- badges: end -->
+
+## Installation
 
 Install the released version from CRAN:
 
@@ -75,6 +77,11 @@ data when readings are absent from the expected CGM sampling grid.
 The default R-native backend uses the R package `mice`. For closest
 agreement with the Python reference workflow, install `reticulate` and
 use the optional Python backend.
+
+Real-imputation model engines run with `n_threads = 1` by default so
+examples, tests, and shared systems use conservative CPU resources.
+Increase `n_threads` for faster local XGBoost, Random Forest, or
+LightGBM runs.
 
 ``` r
 install.packages("reticulate")

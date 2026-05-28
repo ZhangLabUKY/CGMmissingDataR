@@ -597,6 +597,10 @@ run_comprehensive_imputation_benchmark <- function(
 #' @param xgb_nrounds Integer number of XGBoost boosting rounds. Used when
 #'   `models = "xgboost"` and may be used by `models = "auto"` when the
 #'   missing-rate rule selects XGBoost.
+#' @param n_threads Integer number of model-fitting threads for engines that
+#'   support thread controls. The default `1L` is conservative for CRAN and
+#'   shared systems. Increase for faster local XGBoost, Random Forest, and
+#'   LightGBM runs. ARIMA and kNN do not use this setting.
 #' @param arima_order Integer vector of length 3. Python default is
 #'   `c(4L, 1L, 0L)`.
 #' @param seed Integer seed for reproducible MICE, tree-based models, and the
@@ -691,6 +695,7 @@ run_missing_glucose_imputation <- function(
   knn_k = 7,
   xgb_nrounds = 300,
   lgb_nrounds = 400,
+  n_threads = 1L,
   arima_order = c(4L, 1L, 0L),
   seed = 42,
   lag_k = c(1L, 2L, 3L),
@@ -720,6 +725,16 @@ run_missing_glucose_imputation <- function(
     stop("arima_order must be a finite numeric vector of length 3.")
   }
   if (
+    !is.numeric(n_threads) ||
+      length(n_threads) != 1L ||
+      is.na(n_threads) ||
+      !is.finite(n_threads) ||
+      n_threads < 1 ||
+      n_threads != as.integer(n_threads)
+  ) {
+    stop("n_threads must be a single positive integer.", call. = FALSE)
+  }
+  if (
     !is.numeric(missing_warning_threshold) ||
       length(missing_warning_threshold) != 1L ||
       is.na(missing_warning_threshold) ||
@@ -733,6 +748,7 @@ run_missing_glucose_imputation <- function(
   }
   arima_order <- as.integer(arima_order)
   lag_k <- as.integer(lag_k)
+  n_threads <- as.integer(n_threads)
   real_imputation_model <- .cgmd_normalize_real_imputation_model(models)
 
   if (!is.null(feature_cols)) {
@@ -811,6 +827,7 @@ run_missing_glucose_imputation <- function(
       rf_n_estimators = rf_n_estimators,
       knn_k = knn_k,
       lgb_nrounds = lgb_nrounds,
+      n_threads = n_threads,
       models = real_imputation_model,
       drop_internal_cols = TRUE
     )
@@ -897,6 +914,7 @@ run_missing_glucose_imputation <- function(
     rf_n_estimators = rf_n_estimators,
     knn_k = knn_k,
     lgb_nrounds = lgb_nrounds,
+    n_threads = n_threads,
     models = real_imputation_model
   )
   result <- .cgmd_py_keep_user_output_cols(
@@ -1085,7 +1103,7 @@ run_missing_glucose_imputation <- function(
       "                continue",
       "    return pred_full",
       "",
-      "def _cgmd_fit_xgb_predict_missing(X_train, y_train, X_missing, seed=42, nrounds=300):",
+      "def _cgmd_fit_xgb_predict_missing(X_train, y_train, X_missing, seed=42, nrounds=300, n_threads=1):",
       "    if X_missing.shape[0] == 0:",
       "        return np.asarray([], dtype=float)",
       "    model = xgb.XGBRegressor(",
@@ -1095,7 +1113,7 @@ run_missing_glucose_imputation <- function(
       "        subsample=0.8,",
       "        colsample_bytree=0.8,",
       "        reg_lambda=1.0,",
-      "        n_jobs=-1,",
+      "        n_jobs=int(n_threads),",
       "        random_state=int(seed),",
       "        tree_method='hist',",
       "        eval_metric='rmse',",
@@ -1103,7 +1121,7 @@ run_missing_glucose_imputation <- function(
       "    model.fit(X_train, y_train, verbose=False)",
       "    return model.predict(X_missing)",
       "",
-      "def _cgmd_fit_rf_predict_missing(X_train, y_train, X_missing, seed=42, n_estimators=200):",
+      "def _cgmd_fit_rf_predict_missing(X_train, y_train, X_missing, seed=42, n_estimators=200, n_threads=1):",
       "    if X_missing.shape[0] == 0:",
       "        return np.asarray([], dtype=float)",
       "    model = RandomForestRegressor(",
@@ -1112,7 +1130,7 @@ run_missing_glucose_imputation <- function(
       "        min_samples_leaf=1,",
       "        bootstrap=True,",
       "        random_state=int(seed),",
-      "        n_jobs=1,",
+      "        n_jobs=int(n_threads),",
       "    )",
       "    model.fit(X_train, y_train)",
       "    return model.predict(X_missing)",
@@ -1128,7 +1146,7 @@ run_missing_glucose_imputation <- function(
       "    model.fit(X_train_sc, y_train)",
       "    return model.predict(X_missing_sc)",
       "",
-      "def _cgmd_fit_lgb_predict_missing(X_train, y_train, X_missing, seed=42, nrounds=400):",
+      "def _cgmd_fit_lgb_predict_missing(X_train, y_train, X_missing, seed=42, nrounds=400, n_threads=1):",
       "    if X_missing.shape[0] == 0:",
       "        return np.asarray([], dtype=float)",
       "    try:",
@@ -1143,6 +1161,7 @@ run_missing_glucose_imputation <- function(
       "        subsample=0.8,",
       "        colsample_bytree=0.8,",
       "        random_state=int(seed),",
+      "        n_jobs=int(n_threads),",
       "        verbosity=-1,",
       "    )",
       "    model.fit(X_train, y_train)",
@@ -1169,7 +1188,7 @@ run_missing_glucose_imputation <- function(
       "        drop_cols.append('rollmean')",
       "    return df.drop(columns=list(dict.fromkeys(drop_cols)), errors='ignore')",
       "",
-      "def cgmd_r_run_python_engine(r_df, timestamp_col='timestamp', subjectid_col='subjectid', glucose_col='glucose_value', feature_cols=None, interval_minutes=5, use_arima_if_missing_leq=0.05, seed=42, lag_k=(1,2,3), roll_window=3, add_rollmean=True, arima_order=(4,1,0), arima_min_history=20, xgb_nrounds=300, rf_n_estimators=200, knn_k=7, lgb_nrounds=400, models='auto', drop_internal_cols=True):",
+      "def cgmd_r_run_python_engine(r_df, timestamp_col='timestamp', subjectid_col='subjectid', glucose_col='glucose_value', feature_cols=None, interval_minutes=5, use_arima_if_missing_leq=0.05, seed=42, lag_k=(1,2,3), roll_window=3, add_rollmean=True, arima_order=(4,1,0), arima_min_history=20, xgb_nrounds=300, rf_n_estimators=200, knn_k=7, lgb_nrounds=400, n_threads=1, models='auto', drop_internal_cols=True):",
       "    out = pd.DataFrame(r_df).copy()",
       "    out = _cgmd_add_timeseries_column(out, ts_col=timestamp_col, id_col=subjectid_col, interval_minutes=interval_minutes)",
       "    out = _cgmd_encode_sex(out, 'SEX')",
@@ -1207,13 +1226,13 @@ run_missing_glucose_imputation <- function(
       "        elif X_train.shape[1] == 0:",
       "            raise ValueError(f\"{method} requires at least one feature column.\")",
       "        elif model_key == 'xgboost':",
-      "            y_pred_missing = _cgmd_fit_xgb_predict_missing(X_train, y_train, X_missing, seed=seed, nrounds=xgb_nrounds)",
+      "            y_pred_missing = _cgmd_fit_xgb_predict_missing(X_train, y_train, X_missing, seed=seed, nrounds=xgb_nrounds, n_threads=n_threads)",
       "        elif model_key == 'rf':",
-      "            y_pred_missing = _cgmd_fit_rf_predict_missing(X_train, y_train, X_missing, seed=seed, n_estimators=rf_n_estimators)",
+      "            y_pred_missing = _cgmd_fit_rf_predict_missing(X_train, y_train, X_missing, seed=seed, n_estimators=rf_n_estimators, n_threads=n_threads)",
       "        elif model_key == 'knn':",
       "            y_pred_missing = _cgmd_fit_knn_predict_missing(X_train, y_train, X_missing, k=knn_k)",
       "        elif model_key == 'lightgbm':",
-      "            y_pred_missing = _cgmd_fit_lgb_predict_missing(X_train, y_train, X_missing, seed=seed, nrounds=lgb_nrounds)",
+      "            y_pred_missing = _cgmd_fit_lgb_predict_missing(X_train, y_train, X_missing, seed=seed, nrounds=lgb_nrounds, n_threads=n_threads)",
       "        else:",
       "            raise ValueError(f\"Unsupported real-imputation model: {model_key}\")",
       "        y_final[mask_pos] = y_pred_missing",
@@ -1249,6 +1268,7 @@ run_missing_glucose_imputation <- function(
   rf_n_estimators = 200L,
   knn_k = 7L,
   lgb_nrounds = 400L,
+  n_threads = 1L,
   models = "auto",
   drop_internal_cols = TRUE
 ) {
@@ -1275,6 +1295,7 @@ run_missing_glucose_imputation <- function(
     rf_n_estimators = as.integer(rf_n_estimators),
     knn_k = as.integer(knn_k),
     lgb_nrounds = as.integer(lgb_nrounds),
+    n_threads = as.integer(n_threads),
     models = models,
     drop_internal_cols = isTRUE(drop_internal_cols)
   )
@@ -1802,6 +1823,7 @@ run_missing_glucose_imputation <- function(
   rf_n_estimators = 200L,
   knn_k = 7L,
   lgb_nrounds = 400L,
+  n_threads = 1L,
   models = "auto"
 ) {
   imputer_backend <- match.arg(imputer_backend)
@@ -1899,14 +1921,16 @@ run_missing_glucose_imputation <- function(
         y_train = y_train,
         X_missing = X_missing,
         seed = seed,
-        nrounds = xgb_nrounds
+        nrounds = xgb_nrounds,
+        n_threads = n_threads
       ),
       rf = .cgmd_py_fit_rf_predict_missing(
         X_train = X_train,
         y_train = y_train,
         X_missing = X_missing,
         seed = seed,
-        n_estimators = rf_n_estimators
+        n_estimators = rf_n_estimators,
+        n_threads = n_threads
       ),
       knn = .cgmd_py_fit_knn_predict_missing(
         X_train = X_train,
@@ -1919,7 +1943,8 @@ run_missing_glucose_imputation <- function(
         y_train = y_train,
         X_missing = X_missing,
         seed = seed,
-        nrounds = lgb_nrounds
+        nrounds = lgb_nrounds,
+        n_threads = n_threads
       ),
       stop("Unsupported real-imputation model: ", model_key, call. = FALSE)
     )
@@ -2223,7 +2248,8 @@ run_missing_glucose_imputation <- function(
   y_train,
   X_missing,
   seed = 42L,
-  nrounds = 300L
+  nrounds = 300L,
+  n_threads = 1L
 ) {
   if (nrow(X_missing) == 0L) {
     return(numeric(0))
@@ -2239,7 +2265,7 @@ run_missing_glucose_imputation <- function(
     subsample = 0.8,
     colsample_bytree = 0.8,
     lambda = 1.0,
-    nthread = -1L,
+    nthread = as.integer(n_threads),
     seed = as.integer(seed),
     tree_method = "hist",
     eval_metric = "rmse"
@@ -2261,7 +2287,8 @@ run_missing_glucose_imputation <- function(
   y_train,
   X_missing,
   seed = 42L,
-  n_estimators = 200L
+  n_estimators = 200L,
+  n_threads = 1L
 ) {
   if (nrow(X_missing) == 0L) {
     return(numeric(0))
@@ -2289,7 +2316,7 @@ run_missing_glucose_imputation <- function(
     replace = TRUE,
     sample.fraction = 1.0,
     seed = as.integer(seed),
-    num.threads = 1L
+    num.threads = as.integer(n_threads)
   )
   as.numeric(stats::predict(rf_model, data = X_missing)$predictions)
 }
@@ -2338,7 +2365,8 @@ run_missing_glucose_imputation <- function(
   y_train,
   X_missing,
   seed = 42L,
-  nrounds = 400L
+  nrounds = 400L,
+  n_threads = 1L
 ) {
   if (nrow(X_missing) == 0L) {
     return(numeric(0))
@@ -2365,6 +2393,7 @@ run_missing_glucose_imputation <- function(
       num_leaves = 31L,
       bagging_fraction = 0.8,
       feature_fraction = 0.8,
+      num_threads = as.integer(n_threads),
       seed = as.integer(seed),
       verbose = -1L
     ),

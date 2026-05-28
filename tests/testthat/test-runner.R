@@ -68,7 +68,8 @@ expect_strict_imputation_output <- function(
       models = models,
       xgb_nrounds = 5,
       rf_n_estimators = 25,
-      lgb_nrounds = 25
+      lgb_nrounds = 25,
+      n_threads = 1L
     )
   )
 }
@@ -233,7 +234,7 @@ test_that("automatic timestamp parsing accepts common character formats", {
 
   for (time_values in time_formats) {
     dat <- .test_imputation_data(time_values)
-    out <- .run_mice_imputation(dat)
+    out <- .run_mice_imputation(dat, models = "arima")
 
     expect_strict_imputation_output(
       out,
@@ -254,7 +255,7 @@ test_that("automatic timestamp parsing accepts POSIXct timestamps", {
     seq(0, by = 300, length.out = 24)
 
   dat <- .test_imputation_data(base_time)
-  out <- .run_mice_imputation(dat)
+  out <- .run_mice_imputation(dat, models = "arima")
 
   expect_strict_imputation_output(
     out,
@@ -273,7 +274,7 @@ test_that("automatic timestamp parsing reports unparseable timestamps", {
   bad_data <- .test_imputation_data(rep("not a timestamp", 24))
 
   expect_error(
-    .run_mice_imputation(bad_data),
+    .run_mice_imputation(bad_data, models = "arima"),
     "Some timestamp values could not be parsed"
   )
 })
@@ -411,6 +412,7 @@ test_that("Shiny app exposes and maps selectable imputation methods", {
       rf_n_estimators = 25,
       knn_k = 3,
       lgb_nrounds = 25,
+      n_threads = 1L,
       seed = 42
     )
 
@@ -418,6 +420,7 @@ test_that("Shiny app exposes and maps selectable imputation methods", {
     expect_identical(args$rf_n_estimators, 25)
     expect_identical(args$knn_k, 3)
     expect_identical(args$lgb_nrounds, 25)
+    expect_identical(args$n_threads, 1L)
     expect_false(args$export)
   }
 })

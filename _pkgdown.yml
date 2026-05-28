@@ -31,8 +31,7 @@ reference:
   - run_missing_glucose_imputation
   - run_app
 - title: Deprecated Legacy Workflow
-  contents:
-  - run_missingness_benchmark
+  contents: run_missingness_benchmark
 - title: Datasets
   contents:
   - CGMExmplDat5Pct
@@ -42,3 +41,4 @@ footer:
   right: Built with pkgdown
 development:
   mode: auto
+

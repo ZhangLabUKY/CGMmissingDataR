@@ -24,6 +24,7 @@ options(shiny.maxRequestSize = 1024^3)
   rf_n_estimators,
   knn_k,
   lgb_nrounds,
+  n_threads,
   seed
 ) {
   list(
@@ -39,6 +40,7 @@ options(shiny.maxRequestSize = 1024^3)
     rf_n_estimators = rf_n_estimators,
     knn_k = knn_k,
     lgb_nrounds = lgb_nrounds,
+    n_threads = n_threads,
     seed = seed,
     export = FALSE
   )
@@ -157,6 +159,14 @@ ui <- fluidPage(
         inputId = "seed",
         label = "Random seed",
         value = 42,
+        min = 1,
+        step = 1
+      ),
+
+      numericInput(
+        inputId = "n_threads",
+        label = "Model threads",
+        value = 1,
         min = 1,
         step = 1
       ),
@@ -465,6 +475,7 @@ server <- function(input, output, session) {
             rf_n_estimators = input$rf_n_estimators,
             knn_k = input$knn_k,
             lgb_nrounds = input$lgb_nrounds,
+            n_threads = input$n_threads,
             seed = input$seed
           )
           out <- do.call(run_missing_glucose_imputation, call_args)

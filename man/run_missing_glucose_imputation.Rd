@@ -17,6 +17,7 @@ run_missing_glucose_imputation(
   knn_k = 7,
   xgb_nrounds = 300,
   lgb_nrounds = 400,
+  n_threads = 1L,
   arima_order = c(4L, 1L, 0L),
   seed = 42,
   lag_k = c(1L, 2L, 3L),
@@ -77,6 +78,11 @@ missing-rate rule selects XGBoost.}
 
 \item{lgb_nrounds}{Integer number of LightGBM boosting rounds. Used when
 \code{models = "lightgbm"}.}
+
+\item{n_threads}{Integer number of model-fitting threads for engines that
+support thread controls. The default \code{1L} is conservative for CRAN and
+shared systems. Increase for faster local XGBoost, Random Forest, and
+LightGBM runs. ARIMA and kNN do not use this setting.}
 
 \item{arima_order}{Integer vector of length 3. Python default is
 \code{c(4L, 1L, 0L)}.}
